@@ -29,7 +29,7 @@ function LoginPage() {
             // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
-            setError(err.message || "Login failed. Please check your credentials.");
+            setError("Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }
