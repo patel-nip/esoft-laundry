@@ -20,39 +20,51 @@ function DashboardPage() {
     async function fetchDashboardData() {
         setLoading(true);
         try {
-            // Fetch all orders
             const data = await ordersAPI.getAll();
-            const allOrders = data.orders;
+            const allOrders = data.orders || [];
 
-            const today = new Date().toISOString().split("T")[0];
+            console.log("📦 Total orders:", allOrders.length);
 
-            // Calculate stats for today
-            const todayOrders = allOrders.filter(o => o.order_date === today);
-            const stats = {
-                totalToday: todayOrders.length,
-                receivedToday: todayOrders.filter(o => o.status === "RECEIVED").length,
-                completedToday: todayOrders.filter(o => o.status === "COMPLETED").length,
-                deliveredToday: todayOrders.filter(o => o.status === "DELIVERED").length,
+            console.log("🔍 Full order object:", JSON.stringify(allOrders[0], null, 2));
+
+            // Check ALL field names
+            if (allOrders[0]) {
+                console.log("📋 Order fields:", Object.keys(allOrders[0]));
+            }
+
+            // 🔍 DEBUG: Check what status values exist
+            allOrders.forEach((order, index) => {
+                console.log(`Order ${index + 1} status:`, order.status, typeof order.status);
+            });
+
+            // Calculate stats
+            const received = allOrders.filter(o => o.STATUS === "RECEIVED");
+            const completed = allOrders.filter(o => o.STATUS === "COMPLETED");
+            const delivered = allOrders.filter(o => o.STATUS === "DELIVERED");
+
+            console.log("🔵 RECEIVED orders:", received.length, received);
+            console.log("🟢 COMPLETED orders:", completed.length, completed);
+            console.log("🟣 DELIVERED orders:", delivered.length, delivered);
+
+            const newStats = {
+                totalToday: allOrders.length,
+                receivedToday: received.length,
+                completedToday: completed.length,
+                deliveredToday: delivered.length,
             };
-            setStats(stats);
 
-            // Get notifications (orders close to ETA or ready)
+            console.log("📊 Final stats:", newStats);
+            setStats(newStats);
+
+            // Notifications
             const notifs = allOrders
-                .filter(o => {
-                    // Show completed orders (ready for pickup)
-                    if (o.status === "COMPLETED") return true;
-
-                    // Show orders where ETA is today or overdue
-                    const etaDate = new Date(o.eta_date);
-                    const todayDate = new Date(today);
-                    return etaDate <= todayDate && o.status === "RECEIVED";
-                })
-                .slice(0, 10) // Limit to 10 notifications
+                .filter(o => o.STATUS === "COMPLETED")
+                .slice(0, 10)
                 .map(o => ({
                     code: o.code,
                     customer: o.customer_name,
                     phone: o.customer_phone,
-                    eta: o.eta_date,
+                    eta: o.eta_date ? o.eta_date.split("T")[0] : "N/A",
                     status: o.status,
                 }));
 
