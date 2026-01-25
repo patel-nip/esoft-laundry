@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react"; // Added useCallback
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import CustomerList from "../components/customers/CustomerList";
 import CustomerOrdersPanel from "../components/customers/CustomerOrdersPanel";
 import { customersAPI, reportsAPI } from "../services/api";
+
 
 function CustomersPage() {
     const [searchMode, setSearchMode] = useState("name");
@@ -17,6 +18,7 @@ function CustomersPage() {
     const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false);
     const [viewCustomerModalOpen, setViewCustomerModalOpen] = useState(false);
 
+
     const emptyCustomer = {
         id: null,
         code: "",
@@ -28,19 +30,9 @@ function CustomersPage() {
     };
     const [formCustomer, setFormCustomer] = useState(emptyCustomer);
 
-    // Fetch customers on mount
-    useEffect(() => {
-        fetchCustomers();
-    }, []);
 
-    // Fetch orders when selected customer changes
-    useEffect(() => {
-        if (selectedCustomerId) {
-            fetchCustomerOrders(selectedCustomerId);
-        }
-    }, [selectedCustomerId]);
-
-    async function fetchCustomers() {
+    // ✅ Wrap with useCallback
+    const fetchCustomers = useCallback(async function () {
         setLoading(true);
         setError("");
         try {
@@ -56,9 +48,10 @@ function CustomersPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [selectedCustomerId]); // Add dependency
 
-    async function fetchCustomerOrders(customerId) {
+    // ✅ Wrap with useCallback
+    const fetchCustomerOrders = useCallback(async function (customerId) {
         try {
             const data = await reportsAPI.getCustomerReport(customerId);
             setCustomerOrders(data.orders || []);
@@ -66,7 +59,22 @@ function CustomersPage() {
             console.error("Failed to fetch customer orders:", err);
             setCustomerOrders([]);
         }
-    }
+    }, []); // No dependencies needed
+
+
+    // Fetch customers on mount
+    useEffect(() => {
+        fetchCustomers();
+    }, [fetchCustomers]); // ✅ Add to dependency
+
+
+    // Fetch orders when selected customer changes
+    useEffect(() => {
+        if (selectedCustomerId) {
+            fetchCustomerOrders(selectedCustomerId);
+        }
+    }, [selectedCustomerId, fetchCustomerOrders]); // ✅ Add fetchCustomerOrders
+
 
     async function handleSaveCustomer() {
         if (!formCustomer.name.trim() || !formCustomer.phone.trim()) {
@@ -110,6 +118,7 @@ function CustomersPage() {
         }
     }
 
+
     async function handleDeleteCustomer(customerId) {
         if (!window.confirm("Are you sure you want to delete this customer?")) {
             return;
@@ -133,6 +142,7 @@ function CustomersPage() {
         }
     }
 
+
     const filteredCustomers = useMemo(() => {
         return customers.filter((c) => {
             if (!searchText.trim()) return true;
@@ -141,10 +151,12 @@ function CustomersPage() {
         });
     }, [customers, searchText, searchMode]);
 
+
     const selectedCustomer =
         filteredCustomers.find((c) => c.id === selectedCustomerId) ??
         filteredCustomers[0] ??
         null;
+
 
     return (
         <div className="dashboard">
@@ -381,5 +393,6 @@ function CustomersPage() {
         </div>
     );
 }
+
 
 export default CustomersPage;

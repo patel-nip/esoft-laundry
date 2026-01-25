@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
 import { useNavigate } from "react-router-dom";
 import { authAPI, authHelpers } from "../services/api";
 
@@ -11,12 +11,8 @@ function LoginPage() {
     const navigate = useNavigate();
 
 
-    useEffect(() => {
-        checkExistingSession();
-    }, []);
-
-
-    async function checkExistingSession() {
+    // ✅ Wrap with useCallback
+    const checkExistingSession = useCallback(async function () {
         const token = authHelpers.getToken();
 
         if (!token) return; // No token, stay on login page
@@ -46,7 +42,12 @@ function LoginPage() {
             authHelpers.removeToken();
             localStorage.removeItem('last_activity');
         }
-    }
+    }, [navigate]); // Add navigate as dependency
+
+
+    useEffect(() => {
+        checkExistingSession();
+    }, [checkExistingSession]); // ✅ Add to dependency
 
 
     async function handleSubmit(e) {

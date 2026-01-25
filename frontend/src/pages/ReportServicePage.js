@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import { reportsAPI } from "../services/api";
+
 
 function ReportsServicesPrint({ fromDate, toDate, rows, totals }) {
     return (
@@ -59,6 +60,7 @@ function ReportsServicesPrint({ fromDate, toDate, rows, totals }) {
     );
 }
 
+
 function printHtmlFromDiv(divId, title = "Print") {
     const el = document.getElementById(divId);
     if (!el) return;
@@ -82,6 +84,7 @@ function printHtmlFromDiv(divId, title = "Print") {
     win.close();
 }
 
+
 function ReportsServicesPage() {
     const today = new Date().toISOString().split("T")[0];
     const lastMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -93,12 +96,9 @@ function ReportsServicesPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Fetch report on mount with default dates
-    useEffect(() => {
-        fetchReport();
-    }, []);
 
-    async function fetchReport() {
+    // ✅ Wrap with useCallback
+    const fetchReport = useCallback(async function() {
         if (!fromDate || !toDate) {
             alert("Please select both from and to dates");
             return;
@@ -116,7 +116,14 @@ function ReportsServicesPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [fromDate, toDate]); // Add dependencies
+
+
+    // Fetch report on mount with default dates
+    useEffect(() => {
+        fetchReport();
+    }, [fetchReport]); // ✅ Add to dependency
+
 
     const totals = summary || {
         totalSubtotal: 0,
@@ -127,6 +134,7 @@ function ReportsServicesPage() {
         totalCard: 0,
         totalTransfer: 0,
     };
+
 
     return (
         <div className="dashboard">
@@ -296,5 +304,6 @@ function ReportsServicesPage() {
         </div>
     );
 }
+
 
 export default ReportsServicesPage;
