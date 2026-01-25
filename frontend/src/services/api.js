@@ -1,8 +1,48 @@
 const API_BASE_URL = 'https://esoft-laundry-production.up.railway.app/api';
 // Remove trailing slash ↑
 
+function getBrowserFingerprint() {
+    // Create a fingerprint based on browser characteristics
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('browser-fingerprint', 2, 2);
+    const fingerprint = canvas.toDataURL().slice(-50); // Last 50 chars
+
+    const userAgent = navigator.userAgent;
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Combine all to create unique ID
+    const combined = `${fingerprint}_${userAgent}_${screenResolution}_${timezone}`;
+
+    // Create a simple hash
+    let hash = 0;
+    for (let i = 0; i < combined.length; i++) {
+        const char = combined.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    
+    return 'device_' + Math.abs(hash).toString(36);
+}
+
+function getDeviceId() {
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+        deviceId = getBrowserFingerprint();
+        localStorage.setItem('device_id', deviceId);
+        console.log('🔑 New device ID created:', deviceId);
+    }
+    return deviceId;
+}
+
 function getAuthToken() {
-    return localStorage.getItem('token');
+    const deviceId = getDeviceId();
+    const token = localStorage.getItem(`token_${deviceId}`);
+    console.log('🔍 Getting token for device:', deviceId, 'Token exists:', !!token);
+    return token;
 }
 
 async function apiRequest(endpoint, options = {}) {
@@ -150,9 +190,19 @@ export const ncfAPI = {
 
 // Helper to save/remove token
 export const authHelpers = {
-    saveToken: (token) => localStorage.setItem('token', token),
-    removeToken: () => localStorage.removeItem('token'),
-    getToken: () => localStorage.getItem('token'),
+    saveToken: (token) => {
+        const deviceId = getDeviceId();
+        localStorage.setItem(`token_${deviceId}`, token);
+        localStorage.setItem('current_device', deviceId);
+    },
+    getToken: () => {
+        const deviceId = localStorage.getItem('current_device');
+        return localStorage.getItem(`token_${deviceId}`);
+    },
+    removeToken: () => {
+        const deviceId = localStorage.getItem('current_device');
+        localStorage.removeItem(`token_${deviceId}`);
+    },
 };
 
 export const servicePricesAPI = {
@@ -263,3 +313,4 @@ export const backupAPI = {
             method: 'POST',
         }),
 };
+

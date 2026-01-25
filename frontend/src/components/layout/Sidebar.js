@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { authHelpers } from "../../services/api";
 import { jwtDecode } from "jwt-decode";
 
+
 function Sidebar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState({ username: "User", role: "Staff" });
+
 
   useEffect(() => {
     // Get user info from token
@@ -24,12 +26,15 @@ function Sidebar() {
     }
   }, []);
 
+
   function handleLogout() {
     if (window.confirm("Are you sure you want to logout?")) {
       authHelpers.removeToken();
+      localStorage.removeItem('last_activity'); // ✅ Added this line
       navigate("/login");
     }
   }
+
 
   return (
     <aside className="sidebar">
@@ -55,6 +60,7 @@ function Sidebar() {
           </div>
         </div>
 
+
         <div
           className="hamburger"
           onClick={() => setOpen((v) => !v)}
@@ -66,32 +72,40 @@ function Sidebar() {
         </div>
       </div>
 
+
       <div className={`sidebar-nav ${open ? "open" : ""}`}>
         <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+
 
         <button onClick={() => navigate("/dashboard/orders/create")}>
           Create work order
         </button>
 
+
         <button onClick={() => navigate("/dashboard/orders/status")}>
           Order status
         </button>
+
 
         <button onClick={() => navigate("/dashboard/orders/invoice")}>
           Invoice order
         </button>
 
+
         <button onClick={() => navigate("/dashboard/customers")}>
           Customers &amp; Tax IDs
         </button>
+
 
         <button onClick={() => navigate("/dashboard/reports")}>
           Reports
         </button>
 
+
         <button onClick={() => navigate("/dashboard/settings")}>
           Settings
         </button>
+
 
         <button
           onClick={handleLogout}
@@ -105,6 +119,7 @@ function Sidebar() {
           Logout
         </button>
       </div>
+
 
       <div style={{ marginTop: "auto", fontSize: 12 }}>
         <div style={{ borderTop: "1px solid #1f2937", paddingTop: 8, marginBottom: 8 }}>
@@ -121,5 +136,6 @@ function Sidebar() {
     </aside>
   );
 }
+
 
 export default Sidebar;

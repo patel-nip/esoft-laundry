@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -16,6 +17,7 @@ import RolesPage from "./pages/settings/RolesPage";
 import NCFConfigPage from "./pages/settings/NCFConfigPage";
 import PrintersPage from "./pages/settings/PrintersPage";
 import BackupPage from "./pages/settings/BackupPage";
+import { startActivityTracking, stopActivityTracking, checkSessionExpiry } from "./utils/ActivityTracker";
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -29,6 +31,21 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
+  useEffect(() => {
+    if (checkSessionExpiry()) {
+      authHelpers.removeToken();
+      localStorage.removeItem('last_activity');
+      window.location.href = '/login';
+      return;
+    }
+
+    startActivityTracking();
+
+    return () => {
+      stopActivityTracking();
+    };
+  }, []);
+
   return (
     <Router>
       <Routes>

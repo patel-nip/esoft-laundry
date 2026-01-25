@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI, authHelpers } from "../services/api";
+
 
 function LoginPage() {
     const [username, setUsername] = useState("");
@@ -8,6 +9,45 @@ function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
+
+
+    useEffect(() => {
+        checkExistingSession();
+    }, []);
+
+
+    async function checkExistingSession() {
+        const token = authHelpers.getToken();
+
+        if (!token) return; // No token, stay on login page
+
+        // Check if token expired due to 10-minute inactivity
+        const lastActivity = localStorage.getItem('last_activity');
+        if (lastActivity) {
+            const now = Date.now();
+            const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+            if (now - parseInt(lastActivity) > tenMinutes) {
+                // Token expired, clear it
+                authHelpers.removeToken();
+                localStorage.removeItem('last_activity');
+                return;
+            }
+        }
+
+        // Token exists and not expired, verify it's valid
+        try {
+            await authAPI.getMe(); // Test if token is valid
+            // Token is valid, redirect to dashboard
+            console.log("Existing session found, redirecting to dashboard...");
+            navigate("/dashboard");
+        } catch (err) {
+            // Token invalid, clear it
+            authHelpers.removeToken();
+            localStorage.removeItem('last_activity');
+        }
+    }
+
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -26,6 +66,9 @@ function LoginPage() {
             // Save token to localStorage
             authHelpers.saveToken(data.token);
 
+            // Set initial activity timestamp
+            localStorage.setItem('last_activity', Date.now().toString());
+
             // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
@@ -34,6 +77,7 @@ function LoginPage() {
             setLoading(false);
         }
     }
+
 
     return (
         <main className="full-screen-center">
@@ -134,5 +178,6 @@ function LoginPage() {
         </main>
     );
 }
+
 
 export default LoginPage;
