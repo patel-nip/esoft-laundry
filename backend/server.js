@@ -18,7 +18,8 @@ const corsOptions = {
     origin: [
         'http://localhost:5173',
         'http://localhost:3000',
-        'https://esoft-35325.netlify.app' // Add your Netlify URL later
+        'https://esoft-35325.netlify.app',
+        'https://esoft-laundry.vercel.app' // Add your Netlify URL later
     ],
     credentials: true
 };
@@ -50,5 +51,5 @@ app.use("/api/backup", backupRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
