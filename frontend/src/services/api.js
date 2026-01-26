@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://esoft-laundry-production.up.railway.app/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 // Remove trailing slash ↑
 
 function getBrowserFingerprint() {
@@ -24,7 +24,7 @@ function getBrowserFingerprint() {
         hash = ((hash << 5) - hash) + char;
         hash = hash & hash;
     }
-    
+
     return 'device_' + Math.abs(hash).toString(36);
 }
 
