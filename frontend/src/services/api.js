@@ -206,26 +206,64 @@ export const authHelpers = {
 };
 
 export const servicePricesAPI = {
-    getAll: () => apiRequest('/service-prices'),
+    async getAll() {
+        const response = await fetch(`${API_BASE_URL}/service-prices`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+            },
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to fetch service prices');
+        }
+        return response.json();
+    },
 
-    getById: (id) => apiRequest(`/service-prices/${id}`),
-
-    create: (priceData) =>
-        apiRequest('/service-prices', {
+    async create(priceData) {
+        const response = await fetch(`${API_BASE_URL}/service-prices`, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`,
+            },
             body: JSON.stringify(priceData),
-        }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create service price');
+        }
+        return response.json();
+    },
 
-    update: (id, priceData) =>
-        apiRequest(`/service-prices/${id}`, {
+    async update(id, priceData) {
+        const response = await fetch(`${API_BASE_URL}/service-prices/${id}`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`,
+            },
             body: JSON.stringify(priceData),
-        }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update service price');
+        }
+        return response.json();
+    },
 
-    delete: (id) =>
-        apiRequest(`/service-prices/${id}`, {
+    async delete(id) {
+        const response = await fetch(`${API_BASE_URL}/service-prices/${id}`, {
             method: 'DELETE',
-        }),
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+            },
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete service price');
+        }
+        return response.json();
+    },
 };
 
 export const companyAPI = {
