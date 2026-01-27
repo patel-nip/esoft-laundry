@@ -19,7 +19,7 @@ const corsOptions = {
         'http://localhost:5173',
         'http://localhost:3000',
         'https://esoft-35325.netlify.app',
-        'https://esoft-laundry.vercel.app' // Add your Netlify URL later
+        'https://esoft-laundry.vercel.app'
     ],
     credentials: true
 };
