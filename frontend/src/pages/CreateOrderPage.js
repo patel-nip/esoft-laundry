@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import CustomerModal from "../components/orders/CustomerModal";
 import InvoicePrint from "../components/orders/InvoicePrint";
-import { ordersAPI } from "../services/api";
+import { ordersAPI, servicePricesAPI } from "../services/api";
 
 const GARMENT_CATEGORIES = {
     Clothing: ["Shirt", "Polo", "Blouse", "Jeans", "Pants", "Dress"],
@@ -12,12 +12,10 @@ const GARMENT_CATEGORIES = {
 };
 
 const SERVICE_OPTIONS = [
-    { label: "Wash & iron", value: "Wash & iron" },
-    { label: "Iron only", value: "Iron only" },
-    { label: "Wash only", value: "Wash only" },
-    { label: "Alterations - hem", value: "Alteration: Hem" },
-    { label: "Alterations - repair", value: "Alteration: Repair" },
-    { label: "Alterations - resize", value: "Alteration: Resize" },
+    { label: "Wash & iron", value: "Wash & Iron", dbColumn: "wash_iron" },
+    { label: "Wash & iron white", value: "Wash & Iron White", dbColumn: "wash_iron_white" },
+    { label: "Iron only", value: "Iron Only", dbColumn: "iron_only" },
+    { label: "Alterations", value: "Alterations", dbColumn: "alterations" },
 ];
 
 const COLOR_OPTIONS = [
@@ -50,21 +48,66 @@ function CreateOrderPage() {
         transfer: 0,
     });
 
-    // Backend integration states
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [createdOrder, setCreatedOrder] = useState(null);
+    const [servicePrices, setServicePrices] = useState([]);
+
+    useEffect(() => {
+        fetchServicePrices();
+    }, []);
+
+    async function fetchServicePrices() {
+        try {
+            const data = await servicePricesAPI.getAll();
+            console.log("📦 Service Prices loaded:", data.servicePrices);
+            setServicePrices(data.servicePrices || []);
+        } catch (err) {
+            console.error("Failed to fetch service prices:", err);
+        }
+    }
+
+    function calculatePrice(garmentName, serviceName, isExpress) {
+        const priceRow = servicePrices.find(p => p.garment_name === garmentName);
+
+        if (!priceRow) {
+            console.log(`❌ No price found for garment: ${garmentName}`);
+            return 0;
+        }
+
+        let basePrice = 0;
+
+        const serviceOption = SERVICE_OPTIONS.find(s => s.value === serviceName);
+        const dbColumn = serviceOption ? serviceOption.dbColumn : null;
+
+        if (dbColumn && priceRow[dbColumn]) {
+            basePrice = parseFloat(priceRow[dbColumn]);
+        } else {
+            console.log(`❌ No price found for service: ${serviceName} (column: ${dbColumn})`);
+        }
+
+        if (isExpress && basePrice > 0) {
+            const expressPercent = priceRow.express_percent ? parseFloat(priceRow.express_percent) / 100 : 0.20;
+            basePrice = basePrice * (1 + expressPercent);
+        }
+
+        console.log(`💰 Price calculated: ${garmentName} + ${serviceName} + Express(${isExpress}) = ${basePrice}`);
+        return basePrice;
+    }
 
     function addItem(name) {
+        const defaultService = "Wash & Iron";
+        const price = calculatePrice(name, defaultService, false);
+
         setItems((prev) => [
             ...prev,
             {
                 id: prev.length + 1,
                 name,
                 color: "",
-                service: "Wash & iron",
-                price: 0,
+                service: defaultService,
+                price: price,
                 quantity: 1,
                 express: false,
                 note: "",
@@ -85,7 +128,6 @@ function CreateOrderPage() {
     const remaining = Math.max(0, total - amountPaid);
     const change = Math.max(0, amountPaid - total);
 
-    // Process order - connect to backend
     async function handleProcessPayment() {
         if (!customer) {
             setError("Please select a customer");
@@ -102,7 +144,6 @@ function CreateOrderPage() {
         setSuccess("");
 
         try {
-            // Transform items to backend format
             const orderItems = items.map(item => ({
                 qty: item.quantity,
                 garment_name: item.name,
@@ -130,7 +171,6 @@ function CreateOrderPage() {
             setCreatedOrder(response.order);
             setSuccess(`Order ${response.order.code} created successfully!`);
 
-            // Close payment modal and show print choice
             setPaymentModalOpen(false);
             setPrintChoiceModalOpen(true);
 
@@ -159,7 +199,6 @@ function CreateOrderPage() {
         win.print();
         win.close();
 
-        // Reset form after printing
         setTimeout(() => {
             setItems([]);
             setCustomer(null);
@@ -243,7 +282,6 @@ function CreateOrderPage() {
                             </div>
                         </header>
 
-                        {/* Show error/success messages */}
                         {error && (
                             <div style={{ padding: "12px 20px", background: "#991b1b", color: "#fecaca" }}>
                                 {error}
@@ -424,9 +462,12 @@ function CreateOrderPage() {
                                                                     type="button"
                                                                     className="service-option"
                                                                     onClick={() => {
+                                                                        const newPrice = calculatePrice(item.name, s.value, item.express);
                                                                         setItems((prev) =>
                                                                             prev.map((i) =>
-                                                                                i.id === item.id ? { ...i, service: s.value } : i
+                                                                                i.id === item.id
+                                                                                    ? { ...i, service: s.value, price: newPrice }
+                                                                                    : i
                                                                             )
                                                                         );
                                                                         setOpenServiceItemId(null);
@@ -499,15 +540,17 @@ function CreateOrderPage() {
                                                 <input
                                                     type="checkbox"
                                                     checked={item.express}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        const isExpress = e.target.checked;
+                                                        const newPrice = calculatePrice(item.name, item.service, isExpress);
                                                         setItems((prev) =>
                                                             prev.map((i) =>
                                                                 i.id === item.id
-                                                                    ? { ...i, express: e.target.checked }
+                                                                    ? { ...i, express: isExpress, price: newPrice }
                                                                     : i
                                                             )
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                 />
                                             </td>
                                             <td>
@@ -622,7 +665,6 @@ function CreateOrderPage() {
                 onSelectCustomer={setCustomer}
             />
 
-            {/* Payment Modal */}
             {paymentModalOpen && (
                 <div className="modal-backdrop">
                     <div className="modal payment-modal">
@@ -702,7 +744,6 @@ function CreateOrderPage() {
                 </div>
             )}
 
-            {/* Print Choice Modal */}
             {printChoiceModalOpen && (
                 <div className="modal-backdrop">
                     <div className="modal print-choice-modal">

@@ -65,7 +65,7 @@ function DashboardPage() {
                     customer: o.customer_name,
                     phone: o.customer_phone,
                     eta: o.eta_date ? o.eta_date.split("T")[0] : "N/A",
-                    status: o.status,
+                    status: o.STATUS,
                 }));
 
             setNotifications(notifs);
