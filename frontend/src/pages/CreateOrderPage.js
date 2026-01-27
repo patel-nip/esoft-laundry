@@ -804,6 +804,7 @@ function CreateOrderPage() {
                     advance={amountPaid}
                     balance={remaining}
                     estimatedDate={createdOrder?.eta_date || "N/A"}
+                    orderNote={orderNote}
                 />
             </div>
         </div>

@@ -1,7 +1,9 @@
 import React from "react";
 
+
 function OrderStatusPrint({ order }) {
     if (!order) return null;
+
 
     return (
         <div className="invoice-root">
@@ -12,9 +14,11 @@ function OrderStatusPrint({ order }) {
                 <div>Open Mon–Sat 8:00 AM – 6:00 PM</div>
             </div>
 
+
             <div className="invoice-section invoice-section--center">
                 <div className="invoice-subtitle">Order status</div>
             </div>
+
 
             <div className="invoice-section" style={{ textAlign: "left", lineHeight: 1.8 }}>
                 <div><strong>Order</strong> {order.code}</div>
@@ -25,7 +29,7 @@ function OrderStatusPrint({ order }) {
                 <div><strong>Status:</strong> {order.status}</div>
                 <div><strong>ETA:</strong> {order.eta_date}</div>
 
-                {/* Show handler info for COMPLETED and DELIVERED */}
+
                 {(order.status === "COMPLETED" || order.status === "DELIVERED") && order.handler_name && (
                     <>
                         <div style={{ marginTop: 4 }}></div>
@@ -33,7 +37,7 @@ function OrderStatusPrint({ order }) {
                     </>
                 )}
 
-                {/* Show delivery address for DELIVERED status */}
+
                 {order.status === "DELIVERED" && order.customer_address && (
                     <>
                         <div style={{ marginTop: 4 }}></div>
@@ -42,9 +46,27 @@ function OrderStatusPrint({ order }) {
                     </>
                 )}
 
+
                 <div style={{ marginTop: 8 }}></div>
                 <div><strong>Total:</strong> ${parseFloat(order.total || 0).toFixed(2)}</div>
             </div>
+
+
+            {order.notes && (
+                <div style={{
+                    marginTop: 16,
+                    padding: "8px 12px",
+                    fontSize: "12px",
+                    textAlign: "center",
+                    color: "#ef4444",
+                    fontWeight: "600",
+                    border: "1px solid #ef4444",
+                    borderRadius: "4px"
+                }}>
+                    <div><strong>Note:</strong> {order.notes}</div>
+                </div>
+            )}
+
 
             <div style={{ marginTop: 16, fontSize: "11px", textAlign: "center" }}>
                 <div>We are not responsible if your clothes fade or shrink.</div>
@@ -54,5 +76,6 @@ function OrderStatusPrint({ order }) {
         </div>
     );
 }
+
 
 export default OrderStatusPrint;

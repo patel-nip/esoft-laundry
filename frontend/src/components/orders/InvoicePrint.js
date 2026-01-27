@@ -1,7 +1,8 @@
 import React from "react";
 
-function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total, advance, balance, estimatedDate }) {
+function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total, advance, balance, estimatedDate, orderNote }) {
     const totalGarments = items.reduce((sum, i) => sum + i.quantity, 0);
+
 
     return (
         <div className="invoice-root">
@@ -11,6 +12,7 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                 <div>123 Main Street, City Center</div>
                 <div>Open Mon–Sat 8:00 AM – 6:00 PM</div>
             </div>
+
 
             <div className="invoice-section invoice-section--center">
                 <div className="invoice-subtitle">WORK ORDER</div>
@@ -32,12 +34,14 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                 )}
             </div>
 
+
             <div className="invoice-section">
                 <div className="invoice-row invoice-row--bold">
                     <span>DETAILS</span>
                     <span>PRICE</span>
                     <span>TOTAL</span>
                 </div>
+
 
                 {items.map((item, index) => (
                     <div key={item.id} className="invoice-row">
@@ -50,11 +54,13 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     </div>
                 ))}
 
+
                 <div className="invoice-row" style={{ marginTop: 8 }}>
                     <span>Total garments:</span>
                     <span className="invoice-value">{totalGarments}</span>
                 </div>
             </div>
+
 
             <div className="invoice-section">
                 <div className="invoice-row">
@@ -82,6 +88,7 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     <span>{balance.toFixed(2)}</span>
                 </div>
 
+
                 <div className="invoice-row invoice-row--center" style={{ marginTop: 8 }}>
                     <span>Estimated delivery</span>
                 </div>
@@ -89,6 +96,24 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     <span>{estimatedDate}</span>
                 </div>
             </div>
+
+
+            {orderNote && (
+                <div style={{
+                    margin: "16px 0",
+                    padding: "10px",
+                    fontSize: "12px",
+                    textAlign: "center",
+                    color: "red",
+                    fontWeight: "bold",
+                    border: "1px solid red",
+                    borderRadius: "4px",
+                    backgroundColor: "#ffe6e6"
+                }}>
+                    <div>⚠️ NOTE: {orderNote}</div>
+                </div>
+            )}
+
 
             <div className="invoice-footer">
                 <div>We are not responsible if your clothes fade or shrink.</div>
@@ -100,5 +125,6 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
         </div>
     );
 }
+
 
 export default InvoicePrint;
