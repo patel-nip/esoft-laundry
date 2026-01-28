@@ -319,7 +319,7 @@ function ReportsServicesPage() {
                                             {orders.map((row) => (
                                                 <tr key={row.id}>
                                                     <td>{row.code}</td>
-                                                    <td>{row.order_date}</td>
+                                                    <td>{new Date(row.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                                                     <td>{row.customer_name}</td>
                                                     <td>{row.customer_rnc || "-"}</td>
                                                     <td>{row.ncf_number || "-"}</td>

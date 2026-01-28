@@ -1,5 +1,16 @@
 import React from "react";
 
+// Helper function to format date
+function formatDate(dateString) {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
 function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
     const renderHead = () => {
         if (activeTab === "completed") {
@@ -68,12 +79,12 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
                     onClick={() => onSelectOrder(order.id)}
                 >
                     <td>{order.code}</td>
-                    <td>{order.order_date}</td>
+                    <td>{formatDate(order.order_date)}</td>
                     <td>{order.order_time}</td>
                     <td>{order.status}</td>
                     <td>{order.customer_name}</td>
                     <td>{order.customer_phone}</td>
-                    <td>{order.eta_date}</td>
+                    <td>{formatDate(order.eta_date)}</td>
                     <td>{order.location || "-"}</td>
                     <td>{order.handler || "-"}</td>
                     <td>{order.customer_notified || "NO"}</td>
@@ -93,7 +104,7 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
                     onClick={() => onSelectOrder(order.id)}
                 >
                     <td>{order.code}</td>
-                    <td>{order.eta_date}</td>
+                    <td>{formatDate(order.eta_date)}</td>
                     <td>{order.eta_time}</td>
                     <td>{order.status}</td>
                     <td>{order.customer_name}</td>
@@ -114,13 +125,13 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
                 onClick={() => onSelectOrder(order.id)}
             >
                 <td>{order.code}</td>
-                <td>{order.order_date}</td>
+                <td>{formatDate(order.order_date)}</td>
                 <td>{order.order_time}</td>
                 <td>{order.status}</td>
                 <td>{order.customer_name}</td>
                 <td>{order.customer_phone}</td>
                 <td>{order.customer_phone2 || "-"}</td>
-                <td>{order.eta_date}</td>
+                <td>{formatDate(order.eta_date)}</td>
                 <td>{order.user_created}</td>
                 <td className="text-right">{parseFloat(order.total || 0).toFixed(2)}</td>
                 <td className="text-right">{parseFloat(order.paid || 0).toFixed(2)}</td>
