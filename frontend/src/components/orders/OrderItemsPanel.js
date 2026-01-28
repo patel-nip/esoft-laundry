@@ -66,10 +66,6 @@ function OrderItemsPanel({ activeTab, order, onUpdateStatus, onUpdateDetails, on
         setHandler("");
     }
 
-    function handleMarkDelivered() {
-        onUpdateStatus(order.id, "DELIVERED");
-    }
-
     function handleNotifyCustomer() {
         const newStatus = order.customer_notified === "YES" ? "NO" : "YES";
         onUpdateDetails(order.id, { customer_notified: newStatus });
@@ -129,13 +125,7 @@ function OrderItemsPanel({ activeTab, order, onUpdateStatus, onUpdateDetails, on
         if (activeTab === "completed") {
             return (
                 <>
-                    <button 
-                        className="button-primary order-items-button"
-                        onClick={handleMarkDelivered}
-                    >
-                        Mark as delivered
-                    </button>
-                    <button 
+                    <button
                         className="order-items-button-secondary"
                         onClick={handleNotifyCustomer}
                     >

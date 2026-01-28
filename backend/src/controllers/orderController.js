@@ -60,7 +60,7 @@ async function addOrder(req, res) {
             total,
             paid,
             notes,
-            eta_days,
+            eta_date,  // ← Changed from eta_days
         } = req.body;
 
         if (!customer_id || !items || items.length === 0) {
@@ -71,10 +71,15 @@ async function addOrder(req, res) {
         const orderDate = now.toISOString().split("T")[0];
         const orderTime = now.toTimeString().split(" ")[0];
 
-        const etaDays = eta_days || 3;
-        const etaDate = new Date(now);
-        etaDate.setDate(etaDate.getDate() + etaDays);
-        const etaDateStr = etaDate.toISOString().split("T")[0];
+        // ✅ Use the eta_date from frontend, or default to 3 days from now
+        let etaDateStr;
+        if (eta_date) {
+            etaDateStr = eta_date; // Use the date selected by user
+        } else {
+            const defaultEta = new Date(now);
+            defaultEta.setDate(defaultEta.getDate() + 3);
+            etaDateStr = defaultEta.toISOString().split("T")[0];
+        }
 
         const orderCode = `ORD${Date.now()}`;
         const balance = total - paid;
@@ -85,7 +90,7 @@ async function addOrder(req, res) {
             status: "RECEIVED",
             order_date: orderDate,
             order_time: orderTime,
-            eta_date: etaDateStr,
+            eta_date: etaDateStr,  // ← Now using the user-selected date
             eta_time: orderTime,
             user_created: req.user?.username || "system",
             subtotal: subtotal || 0,

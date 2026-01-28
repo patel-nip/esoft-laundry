@@ -10,6 +10,11 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
         return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
+    // Calculate if overpaid (change) or underpaid (balance due)
+    const isOverpaid = balance < 0;
+    const changeAmount = isOverpaid ? Math.abs(balance) : 0;
+    const balanceDue = !isOverpaid ? balance : 0;
+
     return (
         <div className="invoice-root" style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
             {/* Header with 3 columns: Address Left, Title Center, Date Right */}
@@ -64,21 +69,21 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                         <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
                             {index + 1}. {item.name} - {item.color || "No color"}
                         </div>
-                        
+
                         {/* Service breakdown */}
                         <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
                                 <span>• {item.service} (Qty: {item.quantity})</span>
                                 <span style={{ fontWeight: "600" }}>{(item.price * item.quantity).toFixed(2)}</span>
                             </div>
-                            
+
                             {item.express && (
                                 <div style={{ display: "flex", justifyContent: "space-between", color: "#d97706", fontWeight: "600", marginBottom: "2px" }}>
                                     <span>• Express service</span>
                                     <span>Included</span>
                                 </div>
                             )}
-                            
+
                             {item.note && (
                                 <div style={{ fontSize: "9px", color: "#666", marginTop: "4px" }}>
                                     Note: {item.note}
@@ -111,14 +116,58 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     <span>Total:</span>
                     <span>{total.toFixed(2)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                     <span>Advance:</span>
                     <span>{advance.toFixed(2)}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600" }}>
-                    <span>Balance:</span>
-                    <span>{balance.toFixed(2)}</span>
-                </div>
+
+                {/* Show either Change (green) or Balance Due (red) */}
+                {isOverpaid ? (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px",
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        color: "#16a34a",
+                        border: "2px solid #16a34a",
+                        borderRadius: "4px",
+                        backgroundColor: "#dcfce7"
+                    }}>
+                        <span>CHANGE TO RETURN:</span>
+                        <span>${changeAmount.toFixed(2)}</span>
+                    </div>
+                ) : balanceDue > 0 ? (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px",
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        color: "#dc2626",
+                        border: "2px solid #dc2626",
+                        borderRadius: "4px",
+                        backgroundColor: "#fee2e2"
+                    }}>
+                        <span>BALANCE DUE:</span>
+                        <span>-${balanceDue.toFixed(2)}</span>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px",
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        color: "#16a34a",
+                        border: "2px solid #16a34a",
+                        borderRadius: "4px",
+                        backgroundColor: "#dcfce7"
+                    }}>
+                        <span>FULLY PAID</span>
+                        <span>✓</span>
+                    </div>
+                )}
             </div>
 
             {/* Estimated Delivery */}

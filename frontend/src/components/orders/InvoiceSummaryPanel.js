@@ -18,10 +18,16 @@ function InvoiceSummaryPanel({ order, ncfType, ncfInfo, onDeliver, loading }) {
     const tax = parseFloat(order.tax);
     const discount = parseFloat(order.discount);
     const total = parseFloat(order.total);
+    const paid = parseFloat(order.paid || 0);
     const balance = parseFloat(order.balance);
 
+    // Calculate if overpaid (change) or underpaid (balance due)
+    const isOverpaid = balance < 0;
+    const changeAmount = isOverpaid ? Math.abs(balance) : 0;
+    const balanceDue = !isOverpaid ? balance : 0;
+
     function handleProcessDelivery() {
-        if (balance < 0) {
+        if (balanceDue > 0) {
             setShowPaymentModal(true);
         } else {
             confirmDeliver();
@@ -128,10 +134,55 @@ function InvoiceSummaryPanel({ order, ncfType, ncfInfo, onDeliver, loading }) {
                     <span>Total</span>
                     <span>{total.toFixed(2)}</span>
                 </div>
-                <div className="invoice-totals-row" style={{ color: balance < 0 ? "#ef4444" : "#22c55e" }}>
-                    <span>Balance</span>
-                    <span>{balance.toFixed(2)}</span>
+                <div className="invoice-totals-row">
+                    <span>Paid</span>
+                    <span>{paid.toFixed(2)}</span>
                 </div>
+
+                {/* Show either Change (green) or Balance Due (red) */}
+                {isOverpaid ? (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 0",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#22c55e",
+                        borderTop: "1px solid #374151",
+                        marginTop: "8px"
+                    }}>
+                        <span>Change to Return</span>
+                        <span>${changeAmount.toFixed(2)}</span>
+                    </div>
+                ) : balanceDue > 0 ? (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 0",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#ef4444",
+                        borderTop: "1px solid #374151",
+                        marginTop: "8px"
+                    }}>
+                        <span>Balance Due</span>
+                        <span>-${balanceDue.toFixed(2)}</span>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 0",
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#22c55e",
+                        borderTop: "1px solid #374151",
+                        marginTop: "8px"
+                    }}>
+                        <span>Fully Paid</span>
+                        <span>✓</span>
+                    </div>
+                )}
             </div>
 
             <div className="invoice-actions">
@@ -151,29 +202,53 @@ function InvoiceSummaryPanel({ order, ncfType, ncfInfo, onDeliver, loading }) {
             </div>
 
             {/* Payment Modal */}
+            {/* Payment Modal */}
             {showPaymentModal && (
                 <div className="modal-backdrop">
-                    <div className="modal" style={{ minWidth: 320 }}>
+                    <div className="modal" style={{ minWidth: 350 }}>
                         <button
                             type="button"
                             className="modal-close"
-                            onClick={() => setShowPaymentModal(false)}
+                            onClick={() => {
+                                setShowPaymentModal(false);
+                                setPaymentAmount(0);
+                            }}
                         >
                             ×
                         </button>
 
-                        <h3 style={{ marginBottom: 12 }}>Add Payment</h3>
+                        <h3 style={{ marginBottom: 12, fontSize: "16px" }}>Add Payment</h3>
 
-                        <div className="text-small" style={{ marginBottom: 12, color: "#ef4444" }}>
-                            Outstanding balance: <strong>{Math.abs(balance).toFixed(2)}</strong>
+                        {/* Dynamic Outstanding Balance / Change */}
+                        <div style={{
+                            marginBottom: 16,
+                            padding: "12px",
+                            background: paymentAmount >= balanceDue ? "#064e3b" : "#7f1d1d",
+                            color: paymentAmount >= balanceDue ? "#6ee7b7" : "#fecaca",
+                            borderRadius: "6px",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            textAlign: "center"
+                        }}>
+                            {paymentAmount > balanceDue ? (
+                                <>
+                                    <div style={{ marginBottom: "4px" }}>Fully Paid ✓</div>
+                                    <div style={{ fontSize: "16px" }}>Change: ${(paymentAmount - balanceDue).toFixed(2)}</div>
+                                </>
+                            ) : paymentAmount === balanceDue ? (
+                                <>Fully Paid ✓</>
+                            ) : (
+                                <>Outstanding balance: ${(balanceDue - paymentAmount).toFixed(2)}</>
+                            )}
                         </div>
 
                         <label style={{ display: "block", marginBottom: 12 }}>
-                            <span className="text-small">Payment Method</span>
+                            <span className="text-small" style={{ marginBottom: "4px", display: "block" }}>Payment Method</span>
                             <select
                                 className="input"
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value)}
+                                style={{ width: "100%" }}
                             >
                                 <option value="CASH">Cash</option>
                                 <option value="CARD">Card</option>
@@ -181,28 +256,55 @@ function InvoiceSummaryPanel({ order, ncfType, ncfInfo, onDeliver, loading }) {
                             </select>
                         </label>
 
-                        <label style={{ display: "block", marginBottom: 12 }}>
-                            <span className="text-small">Amount</span>
+                        <label style={{ display: "block", marginBottom: 16 }}>
+                            <span className="text-small" style={{ marginBottom: "4px", display: "block" }}>Amount</span>
                             <input
                                 type="number"
                                 className="input"
                                 value={paymentAmount}
                                 onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
                                 placeholder="0.00"
+                                style={{ width: "100%" }}
+                                min="0"
+                                step="0.01"
                             />
                         </label>
+
+                        {/* Show warning if payment is insufficient */}
+                        {paymentAmount > 0 && paymentAmount < balanceDue && (
+                            <div style={{
+                                padding: "10px",
+                                background: "#7f1d1d",
+                                color: "#fecaca",
+                                borderRadius: "6px",
+                                fontSize: "12px",
+                                marginBottom: "12px",
+                                textAlign: "center"
+                            }}>
+                                ⚠️ Payment is insufficient. Remaining: ${(balanceDue - paymentAmount).toFixed(2)}
+                            </div>
+                        )}
 
                         <div style={{ display: "flex", gap: 8 }}>
                             <button
                                 className="button-primary"
                                 onClick={confirmDeliver}
-                                disabled={loading}
+                                disabled={loading || paymentAmount < balanceDue}
+                                style={{
+                                    flex: 1,
+                                    opacity: paymentAmount < balanceDue ? 0.5 : 1,
+                                    cursor: paymentAmount < balanceDue ? "not-allowed" : "pointer"
+                                }}
                             >
                                 {loading ? "Processing..." : "Confirm & Deliver"}
                             </button>
                             <button
                                 className="button-secondary"
-                                onClick={() => setShowPaymentModal(false)}
+                                onClick={() => {
+                                    setShowPaymentModal(false);
+                                    setPaymentAmount(0);
+                                }}
+                                style={{ flex: 1 }}
                             >
                                 Cancel
                             </button>

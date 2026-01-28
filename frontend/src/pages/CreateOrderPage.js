@@ -53,6 +53,14 @@ function CreateOrderPage() {
     const [success, setSuccess] = useState("");
     const [createdOrder, setCreatedOrder] = useState(null);
     const [servicePrices, setServicePrices] = useState([]);
+    const [applyTax, setApplyTax] = useState(true); // Default: tax is applied
+
+    // Add this state at the top with other states (around line 56)
+    const [deliveryDate, setDeliveryDate] = useState(() => {
+        const defaultDate = new Date();
+        defaultDate.setDate(defaultDate.getDate() + 3); // Default 3 days from now
+        return defaultDate.toISOString().split('T')[0];
+    });
 
     useEffect(() => {
         fetchServicePrices();
@@ -122,7 +130,7 @@ function CreateOrderPage() {
     }
 
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tax = subtotal * 0.18;
+    const tax = applyTax ? subtotal * 0.18 : 0;
     const total = subtotal + tax;
     const amountPaid = payment.cash + payment.card + payment.transfer;
     const remaining = Math.max(0, total - amountPaid);
@@ -163,7 +171,7 @@ function CreateOrderPage() {
                 total: total.toFixed(2),
                 paid: amountPaid.toFixed(2),
                 notes: orderNote || null,
-                eta_days: 3,
+                eta_date: deliveryDate,
             };
 
             const response = await ordersAPI.create(orderData);
@@ -315,7 +323,7 @@ function CreateOrderPage() {
                                 </div>
                             </div>
 
-                            <div style={{ textAlign: "right", minWidth: 150 }}>
+                            <div style={{ textAlign: "right", minWidth: 180 }}>
                                 <div style={{ fontSize: 13, fontWeight: 500 }}>
                                     {createdOrder ? `Receipt No. ${createdOrder.code}` : "New Order"}
                                 </div>
@@ -325,6 +333,41 @@ function CreateOrderPage() {
                                         month: 'short',
                                         day: 'numeric'
                                     })}
+                                </div>
+
+                                {/* Delivery Date Picker */}
+                                <div style={{ marginTop: 12 }}>
+                                    <div className="text-small" style={{ marginBottom: 4, color: "#9ca3af" }}>
+                                        Delivery Date
+                                    </div>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        style={{ width: "100%", fontSize: 11, padding: "4px 6px" }}
+                                        value={deliveryDate}
+                                        onChange={(e) => setDeliveryDate(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
+                                    />
+                                </div>
+
+                                {/* ADD THIS - ITBIS Toggle */}
+                                <div style={{ marginTop: 12 }}>
+                                    <label style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                        cursor: "pointer",
+                                        fontSize: 11,
+                                        color: "#e5e7eb"
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={applyTax}
+                                            onChange={(e) => setApplyTax(e.target.checked)}
+                                            style={{ cursor: "pointer" }}
+                                        />
+                                        <span>Apply ITBIS (18%)</span>
+                                    </label>
                                 </div>
                             </div>
                         </header>
@@ -723,8 +766,26 @@ function CreateOrderPage() {
                             ×
                         </button>
 
-                        <div className="payment-total">
-                            Total: {total.toFixed(2)} | Remaining: {remaining.toFixed(2)}
+                        <div style={{
+                            fontSize: "16px",
+                            fontWeight: "600",
+                            marginBottom: "16px",
+                            textAlign: "center"
+                        }}>
+                            Payment Details
+                        </div>
+
+                        <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "12px",
+                            background: "#1f2937",
+                            borderRadius: "6px",
+                            marginBottom: "16px",
+                            fontSize: "14px"
+                        }}>
+                            <span>Total Amount:</span>
+                            <span style={{ fontWeight: "600" }}>${total.toFixed(2)}</span>
                         </div>
 
                         <div className="payment-row">
@@ -760,16 +821,40 @@ function CreateOrderPage() {
                             />
                         </div>
 
-                        <div className="payment-row">
-                            <label>Change</label>
-                            <input
-                                type="number"
-                                readOnly
-                                value={change.toFixed(2)}
-                            />
-                        </div>
+                        {/* Show either Change (green) or Balance Due (red) */}
+                        {amountPaid >= total ? (
+                            <div style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                padding: "12px",
+                                background: "#064e3b",
+                                color: "#6ee7b7",
+                                borderRadius: "6px",
+                                marginTop: "16px",
+                                fontSize: "15px",
+                                fontWeight: "600"
+                            }}>
+                                <span>Change to Return:</span>
+                                <span>${change.toFixed(2)}</span>
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                padding: "12px",
+                                background: "#7f1d1d",
+                                color: "#fecaca",
+                                borderRadius: "6px",
+                                marginTop: "16px",
+                                fontSize: "15px",
+                                fontWeight: "600"
+                            }}>
+                                <span>Balance Due:</span>
+                                <span>-${remaining.toFixed(2)}</span>
+                            </div>
+                        )}
 
-                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                             <button
                                 className="button-primary"
                                 type="button"
@@ -778,7 +863,6 @@ function CreateOrderPage() {
                             >
                                 {loading ? "Processing..." : "Process"}
                             </button>
-
                             <button
                                 type="button"
                                 className="button-secondary"
@@ -790,6 +874,7 @@ function CreateOrderPage() {
                     </div>
                 </div>
             )}
+
 
             {printChoiceModalOpen && (
                 <div className="modal-backdrop">
