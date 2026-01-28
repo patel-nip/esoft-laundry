@@ -1,64 +1,172 @@
-import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
+import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import { reportsAPI } from "../services/api";
 
 
+
 function ReportsServicesPrint({ fromDate, toDate, rows, totals }) {
     return (
-        <div className="invoice-root">
-            <div className="invoice-header">
-                <div className="invoice-title">ESOFT LAUNDRY</div>
-                <div>Report of services performed</div>
-                <div>Period: {fromDate} to {toDate}</div>
+        <div style={{
+            padding: "20px",
+            fontFamily: "'Times New Roman', serif",
+            fontSize: "11px"
+        }}>
+            {/* Header */}
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "8px" }}>
+                    ESOFT LAUNDRY
+                </div>
+                <div style={{ fontSize: "14px", marginBottom: "4px" }}>
+                    Report of services performed
+                </div>
+                <div style={{ fontSize: "12px" }}>
+                    Period: {fromDate} to {toDate}
+                </div>
             </div>
 
-            <div className="invoice-section">
-                <div className="invoice-row invoice-row--bold">
-                    <span>Order</span>
-                    <span>Total</span>
-                </div>
-                {rows.map((row) => (
-                    <div key={row.id} className="invoice-row">
-                        <span>{row.code}</span>
-                        <span>{parseFloat(row.total).toFixed(2)}</span>
-                    </div>
-                ))}
+            {/* Table */}
+            <table style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "20px",
+                fontSize: "10px"
+            }}>
+                <thead>
+                    <tr style={{
+                        borderBottom: "2px solid #000",
+                        backgroundColor: "#f0f0f0"
+                    }}>
+                        <th style={{ padding: "8px 4px", textAlign: "left", borderBottom: "1px solid #000" }}>Order</th>
+                        <th style={{ padding: "8px 4px", textAlign: "left", borderBottom: "1px solid #000" }}>Date</th>
+                        <th style={{ padding: "8px 4px", textAlign: "left", borderBottom: "1px solid #000" }}>Customer</th>
+                        <th style={{ padding: "8px 4px", textAlign: "left", borderBottom: "1px solid #000" }}>RNC</th>
+                        <th style={{ padding: "8px 4px", textAlign: "left", borderBottom: "1px solid #000" }}>NCF</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Subtotal</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>ITBIS</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Discount</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Total</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Cash</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Card</th>
+                        <th style={{ padding: "8px 4px", textAlign: "right", borderBottom: "1px solid #000" }}>Transfer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row, index) => (
+                        <tr key={row.id} style={{
+                            borderBottom: "1px solid #ddd",
+                            backgroundColor: index % 2 === 0 ? "#fff" : "#f9f9f9"
+                        }}>
+                            <td style={{ padding: "6px 4px" }}>{row.code}</td>
+                            <td style={{ padding: "6px 4px" }}>{row.order_date}</td>
+                            <td style={{ padding: "6px 4px" }}>{row.customer_name}</td>
+                            <td style={{ padding: "6px 4px" }}>{row.customer_rnc || "-"}</td>
+                            <td style={{ padding: "6px 4px" }}>{row.ncf_number || "-"}</td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.subtotal).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.tax).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.discount).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.total).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.cash || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.card || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "6px 4px", textAlign: "right" }}>
+                                {parseFloat(row.transfer || 0).toFixed(2)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            {/* Totals Summary */}
+            <div style={{
+                marginTop: "30px",
+                paddingTop: "15px",
+                borderTop: "2px solid #000"
+            }}>
+                <table style={{
+                    width: "300px",
+                    marginLeft: "auto",
+                    fontSize: "11px"
+                }}>
+                    <tbody>
+                        <tr>
+                            <td style={{ padding: "4px 8px", textAlign: "left" }}>
+                                <strong>Subtotal</strong>
+                            </td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                                {totals.totalSubtotal.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: "4px 8px", textAlign: "left" }}>
+                                <strong>ITBIS</strong>
+                            </td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                                {totals.totalTax.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: "4px 8px", textAlign: "left" }}>
+                                <strong>Discount</strong>
+                            </td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                                {totals.totalDiscount.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr style={{ borderTop: "1px solid #000" }}>
+                            <td style={{ padding: "8px 8px 4px", textAlign: "left" }}>
+                                <strong>Total</strong>
+                            </td>
+                            <td style={{ padding: "8px 8px 4px", textAlign: "right" }}>
+                                <strong>{totals.totalAmount.toFixed(2)}</strong>
+                            </td>
+                        </tr>
+                        <tr style={{ borderTop: "1px solid #ddd", marginTop: "8px" }}>
+                            <td style={{ padding: "8px 8px 4px", textAlign: "left" }}>Cash</td>
+                            <td style={{ padding: "8px 8px 4px", textAlign: "right" }}>
+                                {totals.totalCash.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: "4px 8px", textAlign: "left" }}>Card</td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                                {totals.totalCard.toFixed(2)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style={{ padding: "4px 8px", textAlign: "left" }}>Transfer</td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                                {totals.totalTransfer.toFixed(2)}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
-            <div className="invoice-section">
-                <div className="invoice-row">
-                    <span>Subtotal</span>
-                    <span>{totals.totalSubtotal.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>ITBIS</span>
-                    <span>{totals.totalTax.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>Discount</span>
-                    <span>{totals.totalDiscount.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>Total</span>
-                    <span>{totals.totalAmount.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>Cash</span>
-                    <span>{totals.totalCash.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>Card</span>
-                    <span>{totals.totalCard.toFixed(2)}</span>
-                </div>
-                <div className="invoice-row">
-                    <span>Transfer</span>
-                    <span>{totals.totalTransfer.toFixed(2)}</span>
-                </div>
+            {/* Footer */}
+            <div style={{
+                marginTop: "40px",
+                textAlign: "center",
+                fontSize: "10px",
+                color: "#666"
+            }}>
+                <div>Generated on {new Date().toLocaleString()}</div>
             </div>
         </div>
     );
 }
+
 
 
 function printHtmlFromDiv(divId, title = "Print") {
@@ -72,7 +180,15 @@ function printHtmlFromDiv(divId, title = "Print") {
       <head>
         <title>${title}</title>
         <style>
-          body { margin: 0; font-family: "Times New Roman", serif; }
+          body { 
+            margin: 0; 
+            font-family: "Times New Roman", serif;
+          }
+          @media print {
+            body { margin: 0; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+          }
         </style>
       </head>
       <body>${html}</body>
@@ -83,6 +199,7 @@ function printHtmlFromDiv(divId, title = "Print") {
     win.print();
     win.close();
 }
+
 
 
 function ReportsServicesPage() {
@@ -96,9 +213,7 @@ function ReportsServicesPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-
-    // ✅ Wrap with useCallback
-    const fetchReport = useCallback(async function() {
+    const fetchReport = useCallback(async function () {
         if (!fromDate || !toDate) {
             alert("Please select both from and to dates");
             return;
@@ -116,14 +231,11 @@ function ReportsServicesPage() {
         } finally {
             setLoading(false);
         }
-    }, [fromDate, toDate]); // Add dependencies
+    }, [fromDate, toDate]);
 
-
-    // Fetch report on mount with default dates
     useEffect(() => {
         fetchReport();
-    }, [fetchReport]); // ✅ Add to dependency
-
+    }, [fetchReport]);
 
     const totals = summary || {
         totalSubtotal: 0,
@@ -134,7 +246,6 @@ function ReportsServicesPage() {
         totalCard: 0,
         totalTransfer: 0,
     };
-
 
     return (
         <div className="dashboard">
@@ -304,6 +415,5 @@ function ReportsServicesPage() {
         </div>
     );
 }
-
 
 export default ReportsServicesPage;
