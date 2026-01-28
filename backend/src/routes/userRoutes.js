@@ -8,6 +8,7 @@ const {
     removeUser
 } = require("../controllers/userController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
 router.use((req, res, next) => {
     res.set({
@@ -18,10 +19,11 @@ router.use((req, res, next) => {
     next();
 });
 
-router.get("/", authRequired, listUsers);
-router.get("/:id", authRequired, getUser);
-router.post("/", authRequired, addUser);
-router.put("/:id", authRequired, editUser);
-router.delete("/:id", authRequired, removeUser);
+// ✅ All routes protected with users permission
+router.get("/", authRequired, checkPermission('users'), listUsers);
+router.get("/:id", authRequired, checkPermission('users'), getUser);
+router.post("/", authRequired, checkPermission('users'), addUser);
+router.put("/:id", authRequired, checkPermission('users'), editUser);
+router.delete("/:id", authRequired, checkPermission('users'), removeUser);
 
 module.exports = router;

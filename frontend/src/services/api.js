@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://esoft-laundry-backend.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 // Remove trailing slash ↑
 
 function getBrowserFingerprint() {

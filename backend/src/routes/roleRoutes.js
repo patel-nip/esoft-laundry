@@ -7,6 +7,7 @@ const {
     updateMultiplePermissions
 } = require("../controllers/roleController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
 router.use((req, res, next) => {
     res.set({
@@ -17,9 +18,10 @@ router.use((req, res, next) => {
     next();
 });
 
-router.get("/matrix", authRequired, getPermissionMatrix);
-router.get("/:role", authRequired, getRolePermissions);
-router.put("/permission", authRequired, updateSinglePermission);
-router.put("/permissions/bulk", authRequired, updateMultiplePermissions);
+// ✅ Only users with 'roles' permission can access
+router.get("/matrix", authRequired, checkPermission('roles'), getPermissionMatrix);
+router.get("/:role", authRequired, checkPermission('roles'), getRolePermissions);
+router.put("/permission", authRequired, checkPermission('roles'), updateSinglePermission);
+router.put("/permissions/bulk", authRequired, checkPermission('roles'), updateMultiplePermissions);
 
 module.exports = router;

@@ -1,46 +1,80 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { companyAPI } from "../../services/api";
 
 function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total, advance, balance, estimatedDate, orderNote }) {
+    
+    const [company, setCompany] = useState({
+        company_name: "ESOFT LAUNDRY",
+        slogan: "Quality & Punctuality",
+        address: "123 Main Street",
+        phone: "",
+        schedule: "Open Mon–Sat 8:00 AM – 6:00 PM"
+    });
+
+    // Fetch company data on mount
+    useEffect(() => {
+        fetchCompanyData();
+    }, []);
+
+    async function fetchCompanyData() {
+        try {
+            const data = await companyAPI.get();
+            if (data.company) {
+                setCompany({
+                    company_name: data.company.company_name || "ESOFT LAUNDRY",
+                    slogan: data.company.slogan || "Quality & Punctuality",
+                    address: data.company.address || "123 Main Street",
+                    phone: data.company.phone || "",
+                    phone2: data.company.phone2 || "",
+                    schedule: data.company.schedule || "Open Mon–Sat 8:00 AM – 6:00 PM"
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load company info:", err);
+        }
+    }
+
     const totalGarments = items.reduce((sum, i) => sum + i.quantity, 0);
 
-    // Format date properly
     const formatDate = (dateString) => {
         if (!dateString) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         const d = new Date(dateString);
         return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
-    // Calculate if overpaid (change) or underpaid (balance due)
     const isOverpaid = balance < 0;
     const changeAmount = isOverpaid ? Math.abs(balance) : 0;
     const balanceDue = !isOverpaid ? balance : 0;
 
+    const addressLines = company.address.split(',').map(line => line.trim());
+
     return (
         <div className="invoice-root" style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
-            {/* Header with 3 columns: Address Left, Title Center, Date Right */}
+            {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", borderBottom: "2px solid #000", paddingBottom: "10px" }}>
-                {/* Left - Address */}
                 <div style={{ fontSize: "10px", lineHeight: "1.4", flex: 1 }}>
-                    <div>123 Main Street</div>
-                    <div>City Center</div>
-                    <div>Open Mon–Sat</div>
-                    <div>8:00 AM – 6:00 PM</div>
+                    {addressLines.map((line, idx) => (
+                        <div key={idx}>{line}</div>
+                    ))}
+                    {company.phone && <div>{company.phone}</div>}
+                    {company.phone2 && <div>{company.phone2}</div>}
+                    <div>{company.schedule}</div>
                 </div>
 
-                {/* Center - Title */}
                 <div style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "4px" }}>ESOFT LAUNDRY</div>
-                    <div style={{ fontSize: "11px" }}>Quality & Punctuality</div>
+                    <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "4px" }}>
+                        {company.company_name}
+                    </div>
+                    <div style={{ fontSize: "11px" }}>{company.slogan}</div>
                 </div>
 
-                {/* Right - Invoice Info */}
                 <div style={{ fontSize: "10px", textAlign: "right", flex: 1 }}>
                     <div style={{ fontWeight: "600" }}>Invoice - {orderNumber}</div>
                     <div style={{ marginTop: "4px" }}>{formatDate(date)}</div>
                 </div>
             </div>
 
-            {/* Work Order & Customer Info */}
+            {/* Work Order & Customer Info - ✅ WITH LOCATION & HANDLER */}
             <div style={{ marginBottom: "16px", fontSize: "11px" }}>
                 <div style={{ fontSize: "13px", fontWeight: "bold", marginBottom: "8px" }}>WORK ORDER</div>
                 <div style={{ marginBottom: "4px" }}>
@@ -51,13 +85,23 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     <strong>Client:</strong> {customer ? customer.name : "Walk‑in customer"}
                 </div>
                 {customer?.phone && (
-                    <div>
+                    <div style={{ marginBottom: "2px" }}>
                         <strong>Phone:</strong> {customer.phone}
+                    </div>
+                )}
+                {customer?.location && (
+                    <div style={{ marginBottom: "2px" }}>
+                        <strong>Location:</strong> {customer.location}
+                    </div>
+                )}
+                {customer?.handler && (
+                    <div style={{ marginBottom: "2px" }}>
+                        <strong>Handler:</strong> {customer.handler}
                     </div>
                 )}
             </div>
 
-            {/* Items Table - Now with service breakdown */}
+            {/* Items Table */}
             <div style={{ marginBottom: "16px" }}>
                 <div style={{ fontWeight: "bold", fontSize: "11px", borderBottom: "1px solid #000", paddingBottom: "4px", marginBottom: "8px" }}>
                     DETAILS
@@ -65,12 +109,10 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
 
                 {items.map((item, index) => (
                     <div key={item.id} style={{ fontSize: "10px", borderBottom: "1px solid #ddd", paddingTop: "8px", paddingBottom: "8px" }}>
-                        {/* Item Header */}
                         <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
                             {index + 1}. {item.name} - {item.color || "No color"}
                         </div>
 
-                        {/* Service breakdown */}
                         <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
                                 <span>• {item.service} (Qty: {item.quantity})</span>
@@ -121,7 +163,6 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     <span>{advance.toFixed(2)}</span>
                 </div>
 
-                {/* Show either Change (green) or Balance Due (red) */}
                 {isOverpaid ? (
                     <div style={{
                         display: "flex",

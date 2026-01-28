@@ -4,6 +4,7 @@ const {
     findUserByUsername,
     createUser,
 } = require("../models/userModel");
+const { getPermissionsByRole } = require("../models/roleModel");
 
 function signJwtForUser(user) {
     const payload = {
@@ -41,6 +42,17 @@ async function login(req, res) {
 
         const token = signJwtForUser(user);
 
+        // ✅ Fetch user permissions
+        const permissions = await getPermissionsByRole(user.role);
+        const permissionMap = {};
+        permissions.forEach(perm => {
+            // ✅ Convert to boolean and ensure consistent format
+            permissionMap[perm.module] = Boolean(perm.can_access);
+        });
+
+        console.log('📋 Login - User:', user.username, 'Role:', user.role);
+        console.log('🔑 Login - Permissions:', permissionMap);
+
         res.json({
             message: "Login successful",
             token,
@@ -51,6 +63,7 @@ async function login(req, res) {
                 role: user.role,
                 branch: user.branch,
             },
+            permissions: permissionMap  // ✅ Return permissions on login
         });
     } catch (err) {
         console.error("Login error:", err);
@@ -111,8 +124,25 @@ async function getMe(req, res) {
             return res.status(401).json({ message: "Not authenticated" });
         }
 
-        res.json({ user: req.user });
+        // ✅ Fetch user's permissions based on their role
+        const permissions = await getPermissionsByRole(req.user.role);
+
+        // Convert permissions array to object map with boolean values
+        const permissionMap = {};
+        permissions.forEach(perm => {
+            // ✅ Convert to boolean and ensure consistent format
+            permissionMap[perm.module] = Boolean(perm.can_access);
+        });
+
+        console.log('📋 GetMe - User:', req.user.username, 'Role:', req.user.role);
+        console.log('🔑 GetMe - Permissions:', permissionMap);
+
+        res.json({ 
+            user: req.user,
+            permissions: permissionMap  // ✅ Add permissions here
+        });
     } catch (err) {
+        console.error("Error getting current user:", err);
         return res.status(500).json({ message: "Error getting current user" });
     }
 }

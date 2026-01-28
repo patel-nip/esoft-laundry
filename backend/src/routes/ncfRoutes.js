@@ -9,6 +9,7 @@ const {
     updateConfig
 } = require("../controllers/ncfController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
 router.use((req, res, next) => {
     res.set({
@@ -19,12 +20,13 @@ router.use((req, res, next) => {
     next();
 });
 
-router.get("/ranges", authRequired, listNCFRanges);
-router.get("/ranges/:id", authRequired, getNCFRange);
-router.post("/ranges", authRequired, addNCFRange);
-router.put("/ranges/:id", authRequired, editNCFRange);
+// ✅ All routes protected with tax_receipts permission
+router.get("/ranges", authRequired, checkPermission('tax_receipts'), listNCFRanges);
+router.get("/ranges/:id", authRequired, checkPermission('tax_receipts'), getNCFRange);
+router.post("/ranges", authRequired, checkPermission('tax_receipts'), addNCFRange);
+router.put("/ranges/:id", authRequired, checkPermission('tax_receipts'), editNCFRange);
 
-router.get("/config", authRequired, getConfig);
-router.put("/config", authRequired, updateConfig);
+router.get("/config", authRequired, checkPermission('tax_receipts'), getConfig);
+router.put("/config", authRequired, checkPermission('tax_receipts'), updateConfig);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getCompany, updateCompany } = require("../controllers/companyController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
 router.use((req, res, next) => {
     res.set({
@@ -12,7 +13,8 @@ router.use((req, res, next) => {
     next();
 });
 
-router.get("/", authRequired, getCompany);
-router.put("/", authRequired, updateCompany);
+// ✅ All routes protected with company permission
+router.get("/", authRequired, checkPermission('company'), getCompany);
+router.put("/", authRequired, checkPermission('company'), updateCompany);
 
 module.exports = router;

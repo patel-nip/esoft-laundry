@@ -8,6 +8,7 @@ const {
     removeServicePrice
 } = require("../controllers/servicePriceController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
 router.use((req, res, next) => {
     res.set({
@@ -18,10 +19,11 @@ router.use((req, res, next) => {
     next();
 });
 
-router.get("/", authRequired, listServicePrices);
-router.get("/:id", authRequired, getServicePrice);
-router.post("/", authRequired, addServicePrice);
-router.put("/:id", authRequired, editServicePrice);
-router.delete("/:id", authRequired, removeServicePrice);
+// ✅ All routes protected with service_prices permission
+router.get("/", authRequired, checkPermission('service_prices'), listServicePrices);
+router.get("/:id", authRequired, checkPermission('service_prices'), getServicePrice);
+router.post("/", authRequired, checkPermission('service_prices'), addServicePrice);
+router.put("/:id", authRequired, checkPermission('service_prices'), editServicePrice);
+router.delete("/:id", authRequired, checkPermission('service_prices'), removeServicePrice);
 
 module.exports = router;

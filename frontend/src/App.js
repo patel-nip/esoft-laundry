@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import CreateOrderPage from "./pages/CreateOrderPage";
@@ -8,7 +10,6 @@ import InvoiceOrderPage from "./pages/InvoiceOrderPage";
 import CustomersPage from "./pages/CustomersPage";
 import ReportsServicesPage from "./pages/ReportServicePage";
 import SettingsPage from "./pages/SettingsPage";
-import { authHelpers } from "./services/api";
 import ServicePricesPage from "./pages/settings/ServicePricesPage";
 import CompanyInfoPage from "./pages/settings/CompanyInfoPage";
 import InvoiceMessagePage from "./pages/settings/InvoiceMessagePage";
@@ -18,19 +19,9 @@ import NCFConfigPage from "./pages/settings/NCFConfigPage";
 import PrintersPage from "./pages/settings/PrintersPage";
 import BackupPage from "./pages/settings/BackupPage";
 import { startActivityTracking, stopActivityTracking, checkSessionExpiry } from "./utils/ActivityTracker";
+import { authHelpers } from "./services/api";
 
-// Protected Route wrapper
-function ProtectedRoute({ children }) {
-  const token = authHelpers.getToken();
-
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-}
-
-function App() {
+function AppContent() {
   useEffect(() => {
     if (checkSessionExpiry()) {
       authHelpers.removeToken();
@@ -47,126 +38,152 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/orders/create"
-          element={
-            <ProtectedRoute>
-              <CreateOrderPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/orders/status"
-          element={
-            <ProtectedRoute>
-              <OrderStatusPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/orders/invoice"
-          element={
-            <ProtectedRoute>
-              <InvoiceOrderPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/customers"
-          element={
-            <ProtectedRoute>
-              <CustomersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/reports"
-          element={
-            <ProtectedRoute>
-              <ReportsServicesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/service-prices"
-          element={
-            <ProtectedRoute>
-              <ServicePricesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/company"
-          element={
-            <ProtectedRoute>
-              <CompanyInfoPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/invoice-message"
-          element={
-            <ProtectedRoute>
-              <InvoiceMessagePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/users"
-          element={
-            <ProtectedRoute>
-              <UsersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/roles"
-          element={
-            <ProtectedRoute>
-              <RolesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/ncf"
-          element={
-            <ProtectedRoute>
-              <NCFConfigPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/printers"
-          element={
-            <ProtectedRoute>
-              <PrintersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/settings/backup"
-          element={
-            <ProtectedRoute>
-              <BackupPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+      {/* Dashboard - No specific permission required, just logged in */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Order Management Routes */}
+      <Route
+        path="/dashboard/orders/create"
+        element={
+          <ProtectedRoute requiredPermission="create_order">
+            <CreateOrderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/orders/status"
+        element={
+          <ProtectedRoute requiredPermission="order_status">
+            <OrderStatusPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/orders/invoice"
+        element={
+          <ProtectedRoute requiredPermission="invoice_order">
+            <InvoiceOrderPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Customers - Uses order_status permission */}
+      <Route
+        path="/dashboard/customers"
+        element={
+          <ProtectedRoute requiredPermission="order_status">
+            <CustomersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Reports */}
+      <Route
+        path="/dashboard/reports"
+        element={
+          <ProtectedRoute requiredPermission="reports">
+            <ReportsServicesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Settings - Main page accessible to all */}
+      <Route
+        path="/dashboard/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Settings Sub-pages - Each protected by specific permission */}
+      <Route
+        path="/settings/service-prices"
+        element={
+          <ProtectedRoute requiredPermission="service_prices">
+            <ServicePricesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/company"
+        element={
+          <ProtectedRoute requiredPermission="company">
+            <CompanyInfoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/invoice-message"
+        element={
+          <ProtectedRoute requiredPermission="invoice_message">
+            <InvoiceMessagePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/users"
+        element={
+          <ProtectedRoute requiredPermission="users">
+            <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/roles"
+        element={
+          <ProtectedRoute requiredPermission="roles">
+            <RolesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/ncf"
+        element={
+          <ProtectedRoute requiredPermission="tax_receipts">
+            <NCFConfigPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/printers"
+        element={
+          <ProtectedRoute requiredPermission="printers">
+            <PrintersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/backup"
+        element={
+          <ProtectedRoute requiredPermission="backup">
+            <BackupPage />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 

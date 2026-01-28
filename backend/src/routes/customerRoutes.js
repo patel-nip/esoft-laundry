@@ -8,11 +8,13 @@ const {
     removeCustomer,
 } = require("../controllers/customerController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
-router.get("/", authRequired, listCustomers);
-router.get("/:id", authRequired, getCustomer);
-router.post("/", authRequired, addCustomer);
-router.put("/:id", authRequired, editCustomer);
-router.delete("/:id", authRequired, removeCustomer);
+// ✅ Customers use order_status permission (view) and create_order (create)
+router.get("/", authRequired, checkPermission('order_status'), listCustomers);
+router.get("/:id", authRequired, checkPermission('order_status'), getCustomer);
+router.post("/", authRequired, checkPermission('create_order'), addCustomer);
+router.put("/:id", authRequired, checkPermission('order_status'), editCustomer);
+router.delete("/:id", authRequired, checkPermission('order_status'), removeCustomer);
 
 module.exports = router;

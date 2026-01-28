@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react"; // Added useCallback
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authAPI, authHelpers } from "../services/api";
-
+import { useAuth } from "../context/AuthContext"; // ✅ Import useAuth
 
 function LoginPage() {
     const [username, setUsername] = useState("");
@@ -9,46 +9,7 @@ function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
-
-
-    // ✅ Wrap with useCallback
-    const checkExistingSession = useCallback(async function () {
-        const token = authHelpers.getToken();
-
-        if (!token) return; // No token, stay on login page
-
-        // Check if token expired due to 10-minute inactivity
-        const lastActivity = localStorage.getItem('last_activity');
-        if (lastActivity) {
-            const now = Date.now();
-            const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
-
-            if (now - parseInt(lastActivity) > tenMinutes) {
-                // Token expired, clear it
-                authHelpers.removeToken();
-                localStorage.removeItem('last_activity');
-                return;
-            }
-        }
-
-        // Token exists and not expired, verify it's valid
-        try {
-            await authAPI.getMe(); // Test if token is valid
-            // Token is valid, redirect to dashboard
-            console.log("Existing session found, redirecting to dashboard...");
-            navigate("/dashboard");
-        } catch (err) {
-            // Token invalid, clear it
-            authHelpers.removeToken();
-            localStorage.removeItem('last_activity');
-        }
-    }, [navigate]); // Add navigate as dependency
-
-
-    useEffect(() => {
-        checkExistingSession();
-    }, [checkExistingSession]); // ✅ Add to dependency
-
+    const { login: authLogin } = useAuth(); // ✅ Get login function from AuthContext
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -62,7 +23,10 @@ function LoginPage() {
         setError("");
 
         try {
+            console.log('🔐 Attempting login...');
             const data = await authAPI.login(username, password);
+            
+            console.log('✅ Login response:', data);
 
             // Save token to localStorage
             authHelpers.saveToken(data.token);
@@ -70,15 +34,20 @@ function LoginPage() {
             // Set initial activity timestamp
             localStorage.setItem('last_activity', Date.now().toString());
 
+            // ✅ Update AuthContext with user and permissions
+            authLogin(data.user, data.permissions);
+
+            console.log('✅ Navigating to dashboard...');
+
             // Redirect to dashboard
             navigate("/dashboard");
         } catch (err) {
+            console.error("❌ Login error:", err);
             setError("Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }
     }
-
 
     return (
         <main className="full-screen-center">
@@ -179,6 +148,5 @@ function LoginPage() {
         </main>
     );
 }
-
 
 export default LoginPage;

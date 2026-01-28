@@ -7,10 +7,12 @@ const {
     getCompletedOrdersReport,
 } = require("../controllers/reportController");
 const { authRequired } = require("../middleware/authMiddleware");
+const { checkPermission } = require("../middleware/checkPermission");
 
-router.get("/services", authRequired, getServicesReport);
-router.get("/orders-by-date", authRequired, getOrdersByDate);
-router.get("/customer/:customerId", authRequired, getCustomerReport);
-router.get("/completed-orders", authRequired, getCompletedOrdersReport);
+// ✅ All routes protected with reports permission
+router.get("/services", authRequired, checkPermission('reports'), getServicesReport);
+router.get("/orders-by-date", authRequired, checkPermission('reports'), getOrdersByDate);
+router.get("/customer/:customerId", authRequired, checkPermission('reports'), getCustomerReport);
+router.get("/completed-orders", authRequired, checkPermission('reports'), getCompletedOrdersReport);
 
 module.exports = router;

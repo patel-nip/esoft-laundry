@@ -174,7 +174,9 @@ function InvoiceOrderPage() {
                             customer={{
                                 name: selectedOrder.customer_name,
                                 phone: selectedOrder.customer_phone,
-                                rnc: selectedOrder.customer_rnc
+                                rnc: selectedOrder.customer_rnc,
+                                location: selectedOrder.location,  // ✅ ADDED
+                                handler: selectedOrder.handler      // ✅ ADDED
                             }}
                             items={selectedOrder.items?.map((it, idx) => ({
                                 id: `${selectedOrder.id}-${idx}`,
@@ -183,6 +185,8 @@ function InvoiceOrderPage() {
                                 color: it.color,
                                 note: it.note || "",
                                 price: it.price || 0,
+                                service: it.service || "Wash & Iron",  // ✅ ADDED
+                                express: it.is_express === "YES"       // ✅ ADDED
                             })) || []}
                             subtotal={parseFloat(selectedOrder.subtotal)}
                             tax={parseFloat(selectedOrder.tax)}
@@ -190,6 +194,7 @@ function InvoiceOrderPage() {
                             advance={parseFloat(selectedOrder.paid)}
                             balance={parseFloat(selectedOrder.balance)}
                             estimatedDate={selectedOrder.eta_date}
+                            orderNote={selectedOrder.notes}  // ✅ ADDED (for order notes if any)
                         />
                     )}
                 </div>
