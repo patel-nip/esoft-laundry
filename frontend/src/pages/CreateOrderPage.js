@@ -240,44 +240,91 @@ function CreateOrderPage() {
                         <header
                             style={{
                                 borderBottom: "1px solid #1f2937",
-                                padding: "10px 20px",
+                                padding: "12px 20px",
                                 display: "flex",
                                 justifyContent: "space-between",
-                                alignItems: "center",
+                                alignItems: "flex-start",
                                 fontSize: 12,
                             }}
                         >
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                <div>
-                                    <div className="text-small" style={{ marginBottom: 2 }}>
-                                        Customer
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                                <div style={{ flex: 1 }}>
+                                    <div className="text-small" style={{ marginBottom: 4, color: "#9ca3af" }}>
+                                        Customer Information
                                     </div>
-                                    <div style={{ fontSize: 13, fontWeight: 500 }}>
-                                        {customer ? customer.name : "Select customer"}
-                                    </div>
+                                    {customer ? (
+                                        <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+                                            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                                                {customer.name}
+                                            </div>
+                                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                                                {customer.phone && (
+                                                    <div>
+                                                        <span style={{ color: "#9ca3af" }}>Phone: </span>
+                                                        <span>{customer.phone}</span>
+                                                    </div>
+                                                )}
+                                                {customer.phone2 && (
+                                                    <div>
+                                                        <span style={{ color: "#9ca3af" }}>Phone 2: </span>
+                                                        <span>{customer.phone2}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {customer.address && (
+                                                <div style={{ marginTop: 2 }}>
+                                                    <span style={{ color: "#9ca3af" }}>Address: </span>
+                                                    <span>{customer.address}</span>
+                                                </div>
+                                            )}
+                                            <div style={{ display: "flex", gap: 16, marginTop: 2 }}>
+                                                {customer.rnc && (
+                                                    <div>
+                                                        <span style={{ color: "#9ca3af" }}>RNC: </span>
+                                                        <span>{customer.rnc}</span>
+                                                    </div>
+                                                )}
+                                                {customer.email && (
+                                                    <div>
+                                                        <span style={{ color: "#9ca3af" }}>Email: </span>
+                                                        <span>{customer.email}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: 13, fontWeight: 500, color: "#6b7280" }}>
+                                            No customer selected
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => setCustomerModalOpen(true)}
+                                        style={{
+                                            marginTop: 8,
+                                            borderRadius: 6,
+                                            border: "1px solid #0ea5e9",
+                                            padding: "4px 12px",
+                                            background: "transparent",
+                                            color: "#7dd3fc",
+                                            fontSize: 11,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        {customer ? "Change customer" : "Search customer"}
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => setCustomerModalOpen(true)}
-                                    style={{
-                                        borderRadius: 8,
-                                        border: "1px solid #0ea5e9",
-                                        padding: "4px 10px",
-                                        background: "transparent",
-                                        color: "#7dd3fc",
-                                        fontSize: 11,
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    Search customer
-                                </button>
                             </div>
 
-                            <div style={{ textAlign: "right" }}>
-                                <div style={{ fontSize: 12 }}>
+                            <div style={{ textAlign: "right", minWidth: 150 }}>
+                                <div style={{ fontSize: 13, fontWeight: 500 }}>
                                     {createdOrder ? `Receipt No. ${createdOrder.code}` : "New Order"}
                                 </div>
-                                <div className="text-small">
-                                    {new Date().toLocaleDateString()}
+                                <div className="text-small" style={{ color: "#9ca3af", marginTop: 2 }}>
+                                    {new Date().toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    })}
                                 </div>
                             </div>
                         </header>
