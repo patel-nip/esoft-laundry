@@ -3,106 +3,136 @@ import React from "react";
 function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total, advance, balance, estimatedDate, orderNote }) {
     const totalGarments = items.reduce((sum, i) => sum + i.quantity, 0);
 
+    // Format date properly
+    const formatDate = (dateString) => {
+        if (!dateString) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
 
     return (
-        <div className="invoice-root">
-            <div className="invoice-header">
-                <div className="invoice-title">ESOFT LAUNDRY</div>
-                <div>Quality & Punctuality</div>
-                <div>123 Main Street, City Center</div>
-                <div>Open Mon–Sat 8:00 AM – 6:00 PM</div>
+        <div className="invoice-root" style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
+            {/* Header with 3 columns: Address Left, Title Center, Date Right */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", borderBottom: "2px solid #000", paddingBottom: "10px" }}>
+                {/* Left - Address */}
+                <div style={{ fontSize: "10px", lineHeight: "1.4", flex: 1 }}>
+                    <div>123 Main Street</div>
+                    <div>City Center</div>
+                    <div>Open Mon–Sat</div>
+                    <div>8:00 AM – 6:00 PM</div>
+                </div>
+
+                {/* Center - Title */}
+                <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "4px" }}>ESOFT LAUNDRY</div>
+                    <div style={{ fontSize: "11px" }}>Quality & Punctuality</div>
+                </div>
+
+                {/* Right - Invoice Info */}
+                <div style={{ fontSize: "10px", textAlign: "right", flex: 1 }}>
+                    <div style={{ fontWeight: "600" }}>Invoice - {orderNumber}</div>
+                    <div style={{ marginTop: "4px" }}>{formatDate(date)}</div>
+                </div>
             </div>
 
-
-            <div className="invoice-section invoice-section--center">
-                <div className="invoice-subtitle">WORK ORDER</div>
-                <div className="invoice-row">
-                    <span>No. {orderNumber || "000001"}</span>
-                    <span>Date: {date}</span>
+            {/* Work Order & Customer Info */}
+            <div style={{ marginBottom: "16px", fontSize: "11px" }}>
+                <div style={{ fontSize: "13px", fontWeight: "bold", marginBottom: "8px" }}>WORK ORDER</div>
+                <div style={{ marginBottom: "4px" }}>
+                    <strong>No.</strong> {orderNumber || "000001"}
+                    <span style={{ marginLeft: "20px" }}><strong>Date:</strong> {formatDate(date)}</span>
                 </div>
-                <div className="invoice-row">
-                    <span>Client:</span>
-                    <span className="invoice-value">
-                        {customer ? customer.name : "Walk‑in customer"}
-                    </span>
+                <div style={{ marginBottom: "2px" }}>
+                    <strong>Client:</strong> {customer ? customer.name : "Walk‑in customer"}
                 </div>
                 {customer?.phone && (
-                    <div className="invoice-row">
-                        <span>Phone:</span>
-                        <span className="invoice-value">{customer.phone}</span>
+                    <div>
+                        <strong>Phone:</strong> {customer.phone}
                     </div>
                 )}
             </div>
 
-
-            <div className="invoice-section">
-                <div className="invoice-row invoice-row--bold">
-                    <span>DETAILS</span>
-                    <span>PRICE</span>
-                    <span>TOTAL</span>
+            {/* Items Table - Now with service breakdown */}
+            <div style={{ marginBottom: "16px" }}>
+                <div style={{ fontWeight: "bold", fontSize: "11px", borderBottom: "1px solid #000", paddingBottom: "4px", marginBottom: "8px" }}>
+                    DETAILS
                 </div>
 
-
                 {items.map((item, index) => (
-                    <div key={item.id} className="invoice-row">
-                        <div className="invoice-details">
-                            {index + 1}- {item.name} - {item.color || "No color"}
-                            {item.note ? ` (${item.note})` : ""}
+                    <div key={item.id} style={{ fontSize: "10px", borderBottom: "1px solid #ddd", paddingTop: "8px", paddingBottom: "8px" }}>
+                        {/* Item Header */}
+                        <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+                            {index + 1}. {item.name} - {item.color || "No color"}
                         </div>
-                        <span>{parseFloat(item.price || 0).toFixed(2)}</span>
-                        <span>{(item.price * item.quantity).toFixed(2)}</span>
+                        
+                        {/* Service breakdown */}
+                        <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                                <span>• {item.service} (Qty: {item.quantity})</span>
+                                <span style={{ fontWeight: "600" }}>{(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                            
+                            {item.express && (
+                                <div style={{ display: "flex", justifyContent: "space-between", color: "#d97706", fontWeight: "600", marginBottom: "2px" }}>
+                                    <span>• Express service</span>
+                                    <span>Included</span>
+                                </div>
+                            )}
+                            
+                            {item.note && (
+                                <div style={{ fontSize: "9px", color: "#666", marginTop: "4px" }}>
+                                    Note: {item.note}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ))}
 
-
-                <div className="invoice-row" style={{ marginTop: 8 }}>
-                    <span>Total garments:</span>
-                    <span className="invoice-value">{totalGarments}</span>
+                <div style={{ marginTop: "8px", fontSize: "11px", paddingTop: "8px", borderTop: "1px solid #000" }}>
+                    Total garments: {totalGarments}
                 </div>
             </div>
 
-
-            <div className="invoice-section">
-                <div className="invoice-row">
+            {/* Totals Section */}
+            <div style={{ marginBottom: "16px", fontSize: "11px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span>SUBTOTAL:</span>
                     <span>{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="invoice-row">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span>TAX (ITBIS):</span>
                     <span>{tax.toFixed(2)}</span>
                 </div>
-                <div className="invoice-row">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span>DISCOUNT:</span>
                     <span>0.00</span>
                 </div>
-                <div className="invoice-row invoice-row--bold">
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: "bold", paddingTop: "6px", borderTop: "1px solid #000", marginBottom: "4px" }}>
                     <span>Total:</span>
                     <span>{total.toFixed(2)}</span>
                 </div>
-                <div className="invoice-row">
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                     <span>Advance:</span>
                     <span>{advance.toFixed(2)}</span>
                 </div>
-                <div className="invoice-row">
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "600" }}>
                     <span>Balance:</span>
                     <span>{balance.toFixed(2)}</span>
                 </div>
-
-
-                <div className="invoice-row invoice-row--center" style={{ marginTop: 8 }}>
-                    <span>Estimated delivery</span>
-                </div>
-                <div className="invoice-row invoice-row--center">
-                    <span>{estimatedDate}</span>
-                </div>
             </div>
 
+            {/* Estimated Delivery */}
+            <div style={{ marginBottom: "16px", paddingTop: "12px", borderTop: "1px solid #ddd", textAlign: "center", fontSize: "11px" }}>
+                <div style={{ fontWeight: "600", marginBottom: "4px" }}>Estimated delivery</div>
+                <div style={{ fontSize: "12px", fontWeight: "600" }}>{formatDate(estimatedDate)}</div>
+            </div>
 
+            {/* Order Note */}
             {orderNote && (
                 <div style={{
                     margin: "16px 0",
                     padding: "10px",
-                    fontSize: "12px",
+                    fontSize: "11px",
                     textAlign: "center",
                     color: "red",
                     fontWeight: "bold",
@@ -110,21 +140,18 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                     borderRadius: "4px",
                     backgroundColor: "#ffe6e6"
                 }}>
-                    <div>⚠️ NOTE: {orderNote}</div>
+                    ⚠️ NOTE: {orderNote}
                 </div>
             )}
 
-
-            <div className="invoice-footer">
+            {/* Footer */}
+            <div style={{ fontSize: "9px", textAlign: "center", marginTop: "20px", paddingTop: "12px", borderTop: "1px solid #ddd", lineHeight: "1.5" }}>
                 <div>We are not responsible if your clothes fade or shrink.</div>
                 <div>We are not responsible for garments left over 90 days.</div>
-                <div className="invoice-row--center" style={{ marginTop: 6 }}>
-                    <strong>Come back soon!</strong>
-                </div>
+                <div style={{ marginTop: "8px", fontWeight: "bold", fontSize: "11px" }}>Come back soon!</div>
             </div>
         </div>
     );
 }
-
 
 export default InvoicePrint;
