@@ -17,7 +17,6 @@ import UsersPage from "./pages/settings/UsersPage";
 import RolesPage from "./pages/settings/RolesPage";
 import NCFConfigPage from "./pages/settings/NCFConfigPage";
 import PrintersPage from "./pages/settings/PrintersPage";
-import BackupPage from "./pages/settings/BackupPage";
 import { startActivityTracking, stopActivityTracking, checkSessionExpiry } from "./utils/ActivityTracker";
 import { authHelpers } from "./services/api";
 
@@ -162,14 +161,6 @@ function AppContent() {
         element={
           <ProtectedRoute requiredPermission="printers">
             <PrintersPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings/backup"
-        element={
-          <ProtectedRoute requiredPermission="backup">
-            <BackupPage />
           </ProtectedRoute>
         }
       />

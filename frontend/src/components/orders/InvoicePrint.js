@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { companyAPI } from "../../services/api";
+import { companyAPI, invoiceSettingsAPI } from "../../services/api";
 
 function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total, advance, balance, estimatedDate, orderNote }) {
-    
+
     const [company, setCompany] = useState({
         company_name: "ESOFT LAUNDRY",
         slogan: "Quality & Punctuality",
@@ -11,9 +11,15 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
         schedule: "Open Mon–Sat 8:00 AM – 6:00 PM"
     });
 
-    // Fetch company data on mount
+    const [invoiceMessages, setInvoiceMessages] = useState({
+        footer_message: "Come back soon!",
+        terms_and_conditions: "We are not responsible if your clothes fade or shrink.\nWe are not responsible for garments left over 90 days."
+    });
+
+    // Fetch company data and invoice messages on mount
     useEffect(() => {
         fetchCompanyData();
+        fetchInvoiceMessages();
     }, []);
 
     async function fetchCompanyData() {
@@ -34,6 +40,20 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
         }
     }
 
+    async function fetchInvoiceMessages() {
+        try {
+            const data = await invoiceSettingsAPI.get();
+            if (data.settings) {
+                setInvoiceMessages({
+                    footer_message: data.settings.footer_message || "Come back soon!",
+                    terms_and_conditions: data.settings.terms_and_conditions || "We are not responsible if your clothes fade or shrink.\nWe are not responsible for garments left over 90 days."
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load invoice messages:", err);
+        }
+    }
+
     const totalGarments = items.reduce((sum, i) => sum + i.quantity, 0);
 
     const formatDate = (dateString) => {
@@ -47,6 +67,9 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
     const balanceDue = !isOverpaid ? balance : 0;
 
     const addressLines = company.address.split(',').map(line => line.trim());
+
+    // Split terms by newlines for display
+    const termsLines = invoiceMessages.terms_and_conditions.split('\n').filter(line => line.trim());
 
     return (
         <div className="invoice-root" style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
@@ -74,7 +97,7 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                 </div>
             </div>
 
-            {/* Work Order & Customer Info - ✅ WITH LOCATION & HANDLER */}
+            {/* Work Order & Customer Info */}
             <div style={{ marginBottom: "16px", fontSize: "11px" }}>
                 <div style={{ fontSize: "13px", fontWeight: "bold", marginBottom: "8px" }}>WORK ORDER</div>
                 <div style={{ marginBottom: "4px" }}>
@@ -234,11 +257,19 @@ function InvoicePrint({ orderNumber, date, customer, items, subtotal, tax, total
                 </div>
             )}
 
-            {/* Footer */}
+            {/* ✅ DYNAMIC FOOTER - From Invoice Message Settings */}
             <div style={{ fontSize: "9px", textAlign: "center", marginTop: "20px", paddingTop: "12px", borderTop: "1px solid #ddd", lineHeight: "1.5" }}>
-                <div>We are not responsible if your clothes fade or shrink.</div>
-                <div>We are not responsible for garments left over 90 days.</div>
-                <div style={{ marginTop: "8px", fontWeight: "bold", fontSize: "11px" }}>Come back soon!</div>
+                {/* Terms and Conditions */}
+                {termsLines.map((line, idx) => (
+                    <div key={idx}>{line}</div>
+                ))}
+
+                {/* Footer Message */}
+                {invoiceMessages.footer_message && (
+                    <div style={{ marginTop: "8px", fontWeight: "bold", fontSize: "11px" }}>
+                        {invoiceMessages.footer_message}
+                    </div>
+                )}
             </div>
         </div>
     );

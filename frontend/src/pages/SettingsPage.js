@@ -5,14 +5,6 @@ import Header from "../components/layout/Header";
 
 const SETTINGS_ITEMS = [
     {
-        id: "backup",
-        title: "Backup",
-        description:
-            "You can make a backup of the database and configure automatic backup copies.",
-        icon: "📂",
-        path: "/settings/backup",
-    },
-    {
         id: "roles",
         title: "Roles",
         description:
