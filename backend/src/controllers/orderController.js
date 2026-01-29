@@ -1,4 +1,5 @@
 const {
+    generateOrderCode,
     getAllOrders,
     findOrderById,
     createOrder,
@@ -60,7 +61,7 @@ async function addOrder(req, res) {
             total,
             paid,
             notes,
-            eta_date,  // ← Changed from eta_days
+            eta_date,
         } = req.body;
 
         if (!customer_id || !items || items.length === 0) {
@@ -71,17 +72,18 @@ async function addOrder(req, res) {
         const orderDate = now.toISOString().split("T")[0];
         const orderTime = now.toTimeString().split(" ")[0];
 
-        // ✅ Use the eta_date from frontend, or default to 3 days from now
         let etaDateStr;
         if (eta_date) {
-            etaDateStr = eta_date; // Use the date selected by user
+            etaDateStr = eta_date;
         } else {
             const defaultEta = new Date(now);
             defaultEta.setDate(defaultEta.getDate() + 3);
             etaDateStr = defaultEta.toISOString().split("T")[0];
         }
 
-        const orderCode = `ORD${Date.now()}`;
+        // ✅ CHANGED: Generate sequential order code
+        const orderCode = await generateOrderCode();
+
         const balance = total - paid;
 
         const orderId = await createOrder({
@@ -90,7 +92,7 @@ async function addOrder(req, res) {
             status: "RECEIVED",
             order_date: orderDate,
             order_time: orderTime,
-            eta_date: etaDateStr,  // ← Now using the user-selected date
+            eta_date: etaDateStr,
             eta_time: orderTime,
             user_created: req.user?.username || "system",
             subtotal: subtotal || 0,

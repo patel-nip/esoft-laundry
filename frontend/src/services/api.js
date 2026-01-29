@@ -1,5 +1,4 @@
 const API_BASE_URL = 'http://localhost:5000/api';
-// Remove trailing slash ↑
 
 function getBrowserFingerprint() {
     // Create a fingerprint based on browser characteristics

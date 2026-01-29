@@ -1,5 +1,28 @@
 const pool = require("../config/db");
 
+async function generateOrderCode() {
+    const year = new Date().getFullYear();
+    const prefix = `ORD${year}`;
+
+    const [rows] = await pool.query(
+        `SELECT code FROM orders 
+         WHERE code LIKE ? 
+         ORDER BY code DESC 
+         LIMIT 1`,
+        [`${prefix}%`]
+    );
+
+    let nextNumber = 1;
+
+    if (rows.length > 0) {
+        const lastCode = rows[0].code;
+        const lastNumber = parseInt(lastCode.slice(-5));
+        nextNumber = lastNumber + 1;
+    }
+
+    return `${prefix}${String(nextNumber).padStart(5, '0')}`;
+}
+
 async function getAllOrders(status = null) {
     let query = `
     SELECT o.*, c.name as customer_name, c.phone as customer_phone, c.phone2 as customer_phone2
@@ -96,6 +119,7 @@ async function deleteOrder(id) {
 }
 
 module.exports = {
+    generateOrderCode,
     getAllOrders,
     findOrderById,
     findOrderByCode,
