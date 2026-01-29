@@ -5,6 +5,7 @@ async function getAllNCFRanges() {
         SELECT 
             id,
             series_type,
+            series,
             prefix,
             initial_number,
             last_number,
@@ -14,7 +15,19 @@ async function getAllNCFRanges() {
         FROM ncf_ranges 
         ORDER BY series_type
     `);
-    return rows;
+    
+    // Transform for frontend
+    return rows.map(row => ({
+        id: row.id,
+        series_type: row.series_type,
+        series: row.series,
+        prefix: row.prefix,
+        start_number: row.initial_number,
+        end_number: row.last_number,
+        current_number: row.current_number,
+        status: row.is_active === 'YES' ? 'ACTIVE' : 'INACTIVE',
+        created_at: row.created_at
+    }));
 }
 
 async function getNCFRangeById(id) {
@@ -22,12 +35,25 @@ async function getNCFRangeById(id) {
         "SELECT * FROM ncf_ranges WHERE id = ?",
         [id]
     );
-    return rows[0] || null;
+    
+    if (rows.length === 0) return null;
+    
+    const row = rows[0];
+    return {
+        id: row.id,
+        series_type: row.series_type,
+        series: row.series,
+        prefix: row.prefix,
+        start_number: row.initial_number,
+        end_number: row.last_number,
+        current_number: row.current_number,
+        status: row.is_active === 'YES' ? 'ACTIVE' : 'INACTIVE'
+    };
 }
 
 async function getNCFRangeByType(seriesType) {
     const [rows] = await pool.query(
-        "SELECT * FROM ncf_ranges WHERE series_type = ? AND is_active = 'YES'",
+        "SELECT * FROM ncf_ranges WHERE series_type = ? AND is_active = 'YES' LIMIT 1",
         [seriesType]
     );
     return rows[0] || null;
@@ -36,15 +62,16 @@ async function getNCFRangeByType(seriesType) {
 async function createNCFRange(data) {
     const [result] = await pool.query(
         `INSERT INTO ncf_ranges 
-        (series_type, prefix, initial_number, last_number, current_number, is_active) 
-        VALUES (?, ?, ?, ?, ?, ?)`,
+        (series_type, series, prefix, initial_number, last_number, current_number, is_active) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
             data.series_type,
+            data.series || '00000',
             data.prefix,
             data.start_number,
             data.end_number,
             data.current_number || data.start_number,
-            data.status || 'YES'
+            data.status === 'ACTIVE' ? 'YES' : 'NO'
         ]
     );
     return result.insertId;
@@ -54,6 +81,7 @@ async function updateNCFRange(id, data) {
     const [result] = await pool.query(
         `UPDATE ncf_ranges 
         SET series_type = ?,
+            series = ?,
             prefix = ?,
             initial_number = ?,
             last_number = ?,
@@ -62,11 +90,12 @@ async function updateNCFRange(id, data) {
         WHERE id = ?`,
         [
             data.series_type,
+            data.series || '00000',
             data.prefix,
             data.start_number,
             data.end_number,
             data.current_number,
-            data.status,
+            data.status === 'ACTIVE' ? 'YES' : 'NO',
             id
         ]
     );
@@ -81,6 +110,7 @@ async function updateCurrentNumber(id, newNumber) {
     return result.affectedRows;
 }
 
+// ✅ NEW: Generate next NCF number
 async function getNextNCF(seriesType) {
     const range = await getNCFRangeByType(seriesType);
 
@@ -89,13 +119,17 @@ async function getNextNCF(seriesType) {
     }
 
     if (range.current_number > range.last_number) {
-        throw new Error(`NCF range ${seriesType} exhausted`);
+        throw new Error(`NCF range exhausted for ${seriesType}. Please add a new range.`);
     }
 
-    const ncf = `${range.prefix}${String(range.current_number).padStart(8, '0')}`;
+    // Format: Prefix + Series + Current (padded to 8 digits)
+    // Example: B02 + 00000 + 133 = B0200000133
+    const ncfNumber = `${range.prefix}${range.series}${String(range.current_number).padStart(8, '0')}`;
+    
+    // Increment current number
     await updateCurrentNumber(range.id, range.current_number + 1);
 
-    return ncf;
+    return ncfNumber;
 }
 
 async function getNCFConfig() {

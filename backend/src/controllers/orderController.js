@@ -15,6 +15,7 @@ const {
     getPaymentsByOrderId,
     createPayment,
 } = require("../models/paymentModel");
+const { getNextNCF, getNCFConfig } = require("../models/ncfRangeModel");
 
 async function listOrders(req, res) {
     try {
@@ -129,25 +130,63 @@ async function addOrder(req, res) {
 
 async function editOrder(req, res) {
     try {
-        const { status, location, handler, customer_notified, ncf_type, ncf_number } = req.body;
+        const { status, location, handler, customer_notified, ncf_type } = req.body;
 
         const updateData = {};
-        if (status) updateData.status = status;
         if (location) updateData.location = location;
         if (handler) updateData.handler = handler;
         if (customer_notified) updateData.customer_notified = customer_notified;
-        if (ncf_type) updateData.ncf_type = ncf_type;
-        if (ncf_number) updateData.ncf_number = ncf_number;
 
-        const order = await updateOrder(req.params.id, updateData);
+        // ✅ NEW: Auto-assign NCF when marking as DELIVERED
+        if (status === "DELIVERED") {
+            const order = await findOrderById(req.params.id);
 
-        if (!order) {
+            if (!order) {
+                return res.status(404).json({ message: "Order not found" });
+            }
+
+            // Check if order already has NCF
+            if (order.ncf_number) {
+                return res.status(400).json({
+                    message: "Order already has NCF assigned. Cannot deliver twice."
+                });
+            }
+
+            // Get NCF type (from request or default config)
+            let ncfTypeToUse = ncf_type;
+
+            if (!ncfTypeToUse) {
+                const config = await getNCFConfig();
+                ncfTypeToUse = config?.default_ncf_type || 'B02';
+            }
+
+            // Generate NCF number
+            try {
+                const ncfNumber = await getNextNCF(ncfTypeToUse);
+                updateData.ncf_type = ncfTypeToUse;
+                updateData.ncf_number = ncfNumber;
+                updateData.status = "DELIVERED";
+
+                console.log(`✅ NCF assigned: ${ncfNumber} to order ${order.code}`);
+            } catch (ncfError) {
+                console.error("NCF generation error:", ncfError);
+                return res.status(400).json({
+                    message: ncfError.message || "Failed to generate NCF"
+                });
+            }
+        } else if (status) {
+            updateData.status = status;
+        }
+
+        const updatedOrder = await updateOrder(req.params.id, updateData);
+
+        if (!updatedOrder) {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        order.items = await getItemsByOrderId(order.id);
+        updatedOrder.items = await getItemsByOrderId(updatedOrder.id);
 
-        res.json({ message: "Order updated", order });
+        res.json({ message: "Order updated", order: updatedOrder });
     } catch (err) {
         console.error("Edit order error:", err);
         res.status(500).json({ message: "Error updating order" });

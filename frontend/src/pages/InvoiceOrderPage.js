@@ -84,18 +84,10 @@ function InvoiceOrderPage() {
         setError("");
 
         try {
-            // Generate NCF if type selected
-            let ncfNumber = null;
-            if (ncfType !== "NONE") {
-                const ncfData = await ncfAPI.generate(ncfType, "MAIN");
-                ncfNumber = ncfData.ncf;
-            }
-
-            // Update order as delivered with NCF
+            // ✅ Update: Backend now auto-assigns NCF
             await ordersAPI.update(orderId, {
                 status: "DELIVERED",
                 ncf_type: ncfType !== "NONE" ? ncfType : null,
-                ncf_number: ncfNumber,
             });
 
             // Add payment if amount provided
@@ -109,9 +101,10 @@ function InvoiceOrderPage() {
             // Refresh list
             await fetchData();
 
-            alert("Order delivered successfully!");
+            alert("Order delivered successfully with NCF assigned!");
         } catch (err) {
             setError(err.message || "Failed to deliver order");
+            alert(`Error: ${err.message}`);
         } finally {
             setLoading(false);
         }
