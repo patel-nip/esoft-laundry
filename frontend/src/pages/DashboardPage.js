@@ -38,9 +38,9 @@ function DashboardPage() {
             });
 
             // Calculate stats
-            const received = allOrders.filter(o => o.STATUS === "RECEIVED");
-            const completed = allOrders.filter(o => o.STATUS === "COMPLETED");
-            const delivered = allOrders.filter(o => o.STATUS === "DELIVERED");
+            const received = allOrders.filter(o => o.status === "RECEIVED");
+            const completed = allOrders.filter(o => o.status === "COMPLETED");
+            const delivered = allOrders.filter(o => o.status === "DELIVERED");
 
             console.log("🔵 RECEIVED orders:", received.length, received);
             console.log("🟢 COMPLETED orders:", completed.length, completed);
@@ -58,14 +58,14 @@ function DashboardPage() {
 
             // Notifications
             const notifs = allOrders
-                .filter(o => o.STATUS === "COMPLETED")
+                .filter(o => o.status === "COMPLETED")
                 .slice(0, 10)
                 .map(o => ({
                     code: o.code,
                     customer: o.customer_name,
                     phone: o.customer_phone,
                     eta: o.eta_date ? o.eta_date.split("T")[0] : "N/A",
-                    status: o.STATUS,
+                    status: o.status,
                 }));
 
             setNotifications(notifs);
