@@ -29,37 +29,56 @@ function InvoiceOrderPage() {
         try {
             // Fetch completed orders
             const ordersData = await ordersAPI.getAll("COMPLETED");
-            setOrders(ordersData.orders);
+            setOrders(ordersData.orders || []);
 
-            if (ordersData.orders.length > 0) {
+            if (ordersData.orders && ordersData.orders.length > 0) {
                 setSelectedOrderId(ordersData.orders[0].id);
             }
 
             // Fetch NCF ranges
             const ncfData = await ncfAPI.getRanges();
 
-            // Transform to lookup object
+            // ✅ FIXED: Transform to lookup object with correct field names
             const rangesMap = {
                 NONE: null,
             };
 
-            ncfData.ranges.forEach(range => {
-                rangesMap[range.ncf_type] = {
-                    label: range.ncf_type,
-                    prefix: range.prefix,
-                    initial: range.initial_number,
-                    current: range.current_number,
-                    last: range.last_number,
-                };
-            });
+            if (ncfData.ranges && ncfData.ranges.length > 0) {
+                ncfData.ranges.forEach(range => {
+                    // Use series_type as the key (B01, B02, B15)
+                    rangesMap[range.series_type] = {
+                        label: range.series_type,
+                        prefix: range.prefix,
+                        series: range.series,
+                        initial: range.start_number,      // ✅ Changed from initial_number
+                        current: range.current_number,
+                        last: range.end_number,           // ✅ Changed from last_number
+                        remaining: range.end_number - range.current_number + 1
+                    };
+                });
+            }
 
             setNcfRanges(rangesMap);
         } catch (err) {
-            setError(err.message || "Failed to load data");
+            console.error("Fetch data error:", err);
+
+            // ✅ IMPROVED: Better error messages
+            let errorMessage = "Failed to load data.";
+
+            if (err.response?.status === 400) {
+                errorMessage = "⚠️ Database error. Please ensure NCF ranges table is set up correctly.";
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     }
+
 
     const ncfInfo = ncfRanges[ncfType] || null;
 
@@ -80,120 +99,147 @@ function InvoiceOrderPage() {
         filteredOrders.find((o) => o.id === selectedOrderId) ?? filteredOrders[0] ?? null;
 
     async function handleDeliverOrder(orderId, paymentData) {
-        setLoading(true);
-        setError("");
+    setLoading(true);
+    setError("");
 
-        try {
-            // ✅ Update: Backend now auto-assigns NCF
-            await ordersAPI.update(orderId, {
-                status: "DELIVERED",
-                ncf_type: ncfType !== "NONE" ? ncfType : null,
-            });
-
-            // Add payment if amount provided
-            if (paymentData.amount > 0) {
-                await ordersAPI.addPayment(orderId, {
-                    amount: paymentData.amount,
-                    payment_method: paymentData.method,
-                });
-            }
-
-            // Refresh list
-            await fetchData();
-
-            alert("Order delivered successfully with NCF assigned!");
-        } catch (err) {
-            setError(err.message || "Failed to deliver order");
-            alert(`Error: ${err.message}`);
-        } finally {
+    try {
+        // ✅ Validate NCF type selection
+        if (!ncfType || ncfType === "") {
+            setError("⚠️ Please select an NCF type before delivering.");
             setLoading(false);
+            return;
         }
+
+        // ✅ Update: Backend now auto-assigns NCF
+        await ordersAPI.update(orderId, {
+            status: "DELIVERED",
+            ncf_type: ncfType !== "NONE" ? ncfType : null,
+        });
+
+        // Add payment if amount provided
+        if (paymentData.amount > 0) {
+            await ordersAPI.addPayment(orderId, {
+                amount: paymentData.amount,
+                payment_method: paymentData.method,
+            });
+        }
+
+        // Refresh list
+        await fetchData();
+
+        alert("✅ Order delivered successfully with NCF assigned!");
+    } catch (err) {
+        console.error("Deliver order error:", err);
+        
+        // ✅ IMPROVED: Show backend error message
+        const errorMessage = err.response?.data?.message || err.message || "Failed to deliver order";
+        setError(errorMessage);
+        alert(`❌ ${errorMessage}`);
+    } finally {
+        setLoading(false);
     }
+}
+
 
     return (
-        <div className="dashboard">
-            <Sidebar />
-            <main className="dashboard-main">
-                <Header />
-                <div className="dashboard-content invoice-layout">
-                    <section className="invoice-main">
-                        <div className="invoice-header-bar">
-                            <h1 className="invoice-title">Invoice orders</h1>
+    <div className="dashboard">
+        <Sidebar />
+        <main className="dashboard-main">
+            <Header />
+            <div className="dashboard-content invoice-layout">
+                <section className="invoice-main">
+                    <div className="invoice-header-bar">
+                        <h1 className="invoice-title">Invoice orders</h1>
+                    </div>
+
+                    {/* ✅ UPDATED: Better error display */}
+                    {error && (
+                        <div style={{
+                            padding: "16px 24px",
+                            background: "#991b1b",
+                            color: "#fecaca",
+                            marginBottom: "16px",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            border: "1px solid #7f1d1d"
+                        }}>
+                            <span style={{ fontSize: 20 }}>⚠️</span>
+                            <span>{error}</span>
                         </div>
+                    )}
 
-                        {error && (
-                            <div style={{ padding: "12px 20px", background: "#991b1b", color: "#fecaca" }}>
-                                {error}
-                            </div>
-                        )}
+                    <NcfTypeSelector
+                        selected={ncfType}
+                        onChange={setNcfType}
+                        ncfInfo={ncfInfo}
+                    />
 
-                        <NcfTypeSelector
-                            selected={ncfType}
-                            onChange={setNcfType}
-                            ncfInfo={ncfInfo}
-                        />
-
-                        {loading ? (
-                            <div style={{ padding: 20, textAlign: "center" }}>Loading...</div>
-                        ) : (
-                            <InvoiceOrderList
-                                orders={filteredOrders}
-                                searchMode={searchMode}
-                                setSearchMode={setSearchMode}
-                                searchText={searchText}
-                                setSearchText={setSearchText}
-                                selectedOrderId={selectedOrderId}
-                                onSelectOrder={setSelectedOrderId}
-                            />
-                        )}
-                    </section>
-
-                    <aside className="invoice-sidebar">
-                        <InvoiceSummaryPanel
-                            order={selectedOrder}
-                            ncfType={ncfType}
-                            ncfInfo={ncfInfo}
-                            onDeliver={handleDeliverOrder}
-                            loading={loading}
-                        />
-                    </aside>
-                </div>
-
-                <div id="invoice-order-print" style={{ display: "none" }}>
-                    {selectedOrder && (
-                        <InvoicePrint
-                            orderNumber={selectedOrder.code}
-                            date={selectedOrder.order_date}
-                            customer={{
-                                name: selectedOrder.customer_name,
-                                phone: selectedOrder.customer_phone,
-                                rnc: selectedOrder.customer_rnc,
-                                location: selectedOrder.location,  // ✅ ADDED
-                                handler: selectedOrder.handler      // ✅ ADDED
-                            }}
-                            items={selectedOrder.items?.map((it, idx) => ({
-                                id: `${selectedOrder.id}-${idx}`,
-                                name: it.garment_name,
-                                quantity: it.qty,
-                                color: it.color,
-                                note: it.note || "",
-                                price: it.price || 0,
-                                service: it.service || "Wash & Iron",  // ✅ ADDED
-                                express: it.is_express === "YES"       // ✅ ADDED
-                            })) || []}
-                            subtotal={parseFloat(selectedOrder.subtotal)}
-                            tax={parseFloat(selectedOrder.tax)}
-                            total={parseFloat(selectedOrder.total)}
-                            advance={parseFloat(selectedOrder.paid)}
-                            balance={parseFloat(selectedOrder.balance)}
-                            estimatedDate={selectedOrder.eta_date}
-                            orderNote={selectedOrder.notes}  // ✅ ADDED (for order notes if any)
+                    {loading ? (
+                        <div style={{ padding: 20, textAlign: "center" }}>Loading...</div>
+                    ) : (
+                        <InvoiceOrderList
+                            orders={filteredOrders}
+                            searchMode={searchMode}
+                            setSearchMode={setSearchMode}
+                            searchText={searchText}
+                            setSearchText={setSearchText}
+                            selectedOrderId={selectedOrderId}
+                            onSelectOrder={setSelectedOrderId}
                         />
                     )}
-                </div>
-            </main>
-        </div>
-    );
+                </section>
+
+                <aside className="invoice-sidebar">
+                    <InvoiceSummaryPanel
+                        order={selectedOrder}
+                        ncfType={ncfType}
+                        ncfInfo={ncfInfo}
+                        onDeliver={handleDeliverOrder}
+                        loading={loading}
+                    />
+                </aside>
+            </div>
+
+            <div id="invoice-order-print" style={{ display: "none" }}>
+                {selectedOrder && (
+                    <InvoicePrint
+                        orderNumber={selectedOrder.code}
+                        date={selectedOrder.order_date}
+                        customer={{
+                            name: selectedOrder.customer_name,
+                            phone: selectedOrder.customer_phone,
+                            rnc: selectedOrder.customer_rnc,
+                            location: selectedOrder.location,
+                            handler: selectedOrder.handler
+                        }}
+                        items={selectedOrder.items?.map((it, idx) => ({
+                            id: `${selectedOrder.id}-${idx}`,
+                            name: it.garment_name,
+                            quantity: it.qty,
+                            color: it.color,
+                            note: it.note || "",
+                            price: it.price || 0,
+                            service: it.service || "Wash & Iron",
+                            express: it.is_express === "YES"
+                        })) || []}
+                        subtotal={parseFloat(selectedOrder.subtotal)}
+                        tax={parseFloat(selectedOrder.tax)}
+                        total={parseFloat(selectedOrder.total)}
+                        advance={parseFloat(selectedOrder.paid)}
+                        balance={parseFloat(selectedOrder.balance)}
+                        estimatedDate={selectedOrder.eta_date}
+                        orderNote={selectedOrder.notes}
+                    />
+                )}
+            </div>
+        </main>
+    </div>
+);
+
 }
 
 export default InvoiceOrderPage;

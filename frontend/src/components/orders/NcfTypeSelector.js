@@ -16,37 +16,41 @@ function NcfTypeSelector({ selected, onChange, ncfInfo }) {
                 <label className="ncf-radio">
                     <input
                         type="radio"
-                        checked={selected === "CREDIT"}
-                        onChange={() => onChange("CREDIT")}
+                        checked={selected === "B01"}
+                        onChange={() => onChange("B01")}
                     />
                     <span>Tax Credit</span>
                 </label>
                 <label className="ncf-radio">
                     <input
                         type="radio"
-                        checked={selected === "FINAL"}
-                        onChange={() => onChange("FINAL")}
+                        checked={selected === "B02"}
+                        onChange={() => onChange("B02")}
                     />
                     <span>Final Consumer</span>
                 </label>
                 <label className="ncf-radio">
                     <input
                         type="radio"
-                        checked={selected === "GOV"}
-                        onChange={() => onChange("GOV")}
+                        checked={selected === "B15"}
+                        onChange={() => onChange("B15")}
                     />
                     <span>Government</span>
                 </label>
             </div>
             <div className="ncf-selector-right">
-                {ncfInfo ? (
+                {selected !== "NONE" && ncfInfo ? (
                     <div className="ncf-range">
                         <div className="text-small">
-                            Prefix: <strong>{ncfInfo.prefix}</strong>
+                            Prefix: <strong>{ncfInfo.prefix}</strong> • Series: <strong>{ncfInfo.series}</strong>
                         </div>
                         <div className="text-small">
-                            Range: {ncfInfo.initial} – {ncfInfo.last} · Used: {ncfInfo.current}
+                            Range: {ncfInfo.initial} – {ncfInfo.last} · Current: {ncfInfo.current} · Left: {ncfInfo.remaining || (ncfInfo.last - ncfInfo.current + 1)}
                         </div>
+                    </div>
+                ) : selected !== "NONE" && !ncfInfo ? (
+                    <div className="text-small" style={{ color: "#ef4444", fontWeight: 500 }}>
+                        ⚠️ No active NCF range for {selected}. Add one in Settings.
                     </div>
                 ) : (
                     <div className="text-small">No tax receipt will be assigned.</div>

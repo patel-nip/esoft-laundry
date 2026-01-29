@@ -25,10 +25,13 @@ async function generateOrderCode() {
 
 async function getAllOrders(status = null) {
     let query = `
-    SELECT o.*, c.name as customer_name, c.phone as customer_phone, c.phone2 as customer_phone2
-    FROM orders o
-    JOIN customers c ON o.customer_id = c.id
-  `;
+        SELECT o.*, 
+               c.name as customer_name, 
+               c.phone as customer_phone, 
+               c.phone2 as customer_phone2
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.id
+    `;
 
     const params = [];
 
@@ -39,9 +42,15 @@ async function getAllOrders(status = null) {
 
     query += " ORDER BY o.created_at DESC";
 
-    const [rows] = await pool.query(query, params);
-    return rows;
+    try {
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error("Error in getAllOrders:", error);
+        throw error;
+    }
 }
+
 
 async function findOrderById(id) {
     const [rows] = await pool.query(

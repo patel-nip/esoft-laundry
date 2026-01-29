@@ -137,25 +137,25 @@ async function editOrder(req, res) {
         if (handler) updateData.handler = handler;
         if (customer_notified) updateData.customer_notified = customer_notified;
 
-        // ✅ NEW: Auto-assign NCF when marking as DELIVERED
+        // ✅ Auto-assign NCF when marking as DELIVERED
         if (status === "DELIVERED") {
             const order = await findOrderById(req.params.id);
-
+            
             if (!order) {
                 return res.status(404).json({ message: "Order not found" });
             }
 
             // Check if order already has NCF
             if (order.ncf_number) {
-                return res.status(400).json({
-                    message: "Order already has NCF assigned. Cannot deliver twice."
+                return res.status(400).json({ 
+                    message: "⚠️ This order already has an NCF assigned. Cannot deliver twice." 
                 });
             }
 
             // Get NCF type (from request or default config)
             let ncfTypeToUse = ncf_type;
-
-            if (!ncfTypeToUse) {
+            
+            if (!ncfTypeToUse || ncfTypeToUse === 'NONE') {
                 const config = await getNCFConfig();
                 ncfTypeToUse = config?.default_ncf_type || 'B02';
             }
@@ -166,13 +166,23 @@ async function editOrder(req, res) {
                 updateData.ncf_type = ncfTypeToUse;
                 updateData.ncf_number = ncfNumber;
                 updateData.status = "DELIVERED";
-
+                
                 console.log(`✅ NCF assigned: ${ncfNumber} to order ${order.code}`);
             } catch (ncfError) {
                 console.error("NCF generation error:", ncfError);
-                return res.status(400).json({
-                    message: ncfError.message || "Failed to generate NCF"
-                });
+                
+                // ✅ IMPROVED: Specific error messages
+                let errorMessage = "Failed to generate NCF number.";
+                
+                if (ncfError.message.includes("No active NCF range")) {
+                    errorMessage = `⚠️ No active NCF range found for ${ncfTypeToUse}. Please add an NCF range in Settings → Tax Receipts.`;
+                } else if (ncfError.message.includes("exhausted")) {
+                    errorMessage = `⚠️ NCF range exhausted for ${ncfTypeToUse}. Please add a new range in Settings → Tax Receipts.`;
+                } else {
+                    errorMessage = `⚠️ ${ncfError.message}`;
+                }
+                
+                return res.status(400).json({ message: errorMessage });
             }
         } else if (status) {
             updateData.status = status;
@@ -189,9 +199,10 @@ async function editOrder(req, res) {
         res.json({ message: "Order updated", order: updatedOrder });
     } catch (err) {
         console.error("Edit order error:", err);
-        res.status(500).json({ message: "Error updating order" });
+        res.status(500).json({ message: "Error updating order. Please try again." });
     }
 }
+
 
 async function removeOrder(req, res) {
     try {
