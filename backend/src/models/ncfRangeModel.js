@@ -7,23 +7,23 @@ async function getAllNCFRanges() {
             series_type,
             series,
             prefix,
-            initial_number,
-            last_number,
+            start_number,
+            end_number,
             current_number,
             is_active,
             created_at
         FROM ncf_ranges 
         ORDER BY series_type
     `);
-    
+
     // Transform for frontend
     return rows.map(row => ({
         id: row.id,
         series_type: row.series_type,
         series: row.series,
         prefix: row.prefix,
-        start_number: row.initial_number,
-        end_number: row.last_number,
+        start_number: row.start_number,
+        end_number: row.end_number,
         current_number: row.current_number,
         status: row.is_active === 'YES' ? 'ACTIVE' : 'INACTIVE',
         created_at: row.created_at
@@ -35,17 +35,17 @@ async function getNCFRangeById(id) {
         "SELECT * FROM ncf_ranges WHERE id = ?",
         [id]
     );
-    
+
     if (rows.length === 0) return null;
-    
+
     const row = rows[0];
     return {
         id: row.id,
         series_type: row.series_type,
         series: row.series,
         prefix: row.prefix,
-        start_number: row.initial_number,
-        end_number: row.last_number,
+        start_number: row.start_number,
+        end_number: row.end_number,
         current_number: row.current_number,
         status: row.is_active === 'YES' ? 'ACTIVE' : 'INACTIVE'
     };
@@ -62,7 +62,7 @@ async function getNCFRangeByType(seriesType) {
 async function createNCFRange(data) {
     const [result] = await pool.query(
         `INSERT INTO ncf_ranges 
-        (series_type, series, prefix, initial_number, last_number, current_number, is_active) 
+        (series_type, series, prefix, start_number, end_number, current_number, is_active) 
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
             data.series_type,
@@ -83,8 +83,8 @@ async function updateNCFRange(id, data) {
         SET series_type = ?,
             series = ?,
             prefix = ?,
-            initial_number = ?,
-            last_number = ?,
+            start_number = ?,
+            end_number = ?,
             current_number = ?,
             is_active = ?
         WHERE id = ?`,
@@ -110,7 +110,7 @@ async function updateCurrentNumber(id, newNumber) {
     return result.affectedRows;
 }
 
-// ✅ NEW: Generate next NCF number
+// ✅ Generate next NCF number
 async function getNextNCF(seriesType) {
     const range = await getNCFRangeByType(seriesType);
 
@@ -118,14 +118,15 @@ async function getNextNCF(seriesType) {
         throw new Error(`No active NCF range found for type ${seriesType}`);
     }
 
-    if (range.current_number > range.last_number) {
+    if (range.current_number > range.end_number) {
         throw new Error(`NCF range exhausted for ${seriesType}. Please add a new range.`);
     }
 
     // Format: Prefix + Series + Current (padded to 8 digits)
-    // Example: B02 + 00000 + 133 = B0200000133
-    const ncfNumber = `${range.prefix}${range.series}${String(range.current_number).padStart(8, '0')}`;
-    
+    // Example: B02 + 00000 + 00000133 = B0200000000000133
+    const paddedNumber = String(range.current_number).padStart(8, '0');
+    const ncfNumber = `${range.prefix}${range.series}${paddedNumber}`;
+
     // Increment current number
     await updateCurrentNumber(range.id, range.current_number + 1);
 
