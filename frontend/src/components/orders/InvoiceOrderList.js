@@ -1,5 +1,16 @@
 import React from "react";
 
+// Helper function to format date
+function formatDate(dateString) {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
 function InvoiceOrderList({
     orders,
     searchMode,
@@ -70,6 +81,8 @@ function InvoiceOrderList({
                     <tbody>
                         {orders.map((order) => {
                             const isSelected = order.id === selectedOrderId;
+                            const balance = parseFloat(order.balance || 0);
+
                             return (
                                 <tr
                                     key={order.id}
@@ -79,17 +92,27 @@ function InvoiceOrderList({
                                     onClick={() => onSelectOrder(order.id)}
                                 >
                                     <td>{order.code}</td>
-                                    <td>{order.order_date}</td>
+                                    <td>{formatDate(order.order_date)}</td>
                                     <td>{order.order_time}</td>
                                     <td>{order.status}</td>
                                     <td>{order.customer_name}</td>
                                     <td>{order.customer_phone}</td>
-                                    <td>{order.eta_date}</td>
+                                    <td>{formatDate(order.eta_date)}</td>
                                     <td>{order.location || "-"}</td>
                                     <td>{order.handler || "-"}</td>
-                                    <td className="text-right">{parseFloat(order.total).toFixed(2)}</td>
-                                    <td className="text-right">{parseFloat(order.paid).toFixed(2)}</td>
-                                    <td className="text-right">{parseFloat(order.balance).toFixed(2)}</td>
+                                    <td className="text-right">${parseFloat(order.total || 0).toFixed(2)}</td>
+                                    <td className="text-right">${parseFloat(order.paid || 0).toFixed(2)}</td>
+                                    <td
+                                        className="text-right"
+                                        style={{
+                                            fontWeight: 600,
+                                            color: balance > 0 ? "#ef4444" : balance < 0 ? "#10b981" : "inherit"
+                                        }}
+                                    >
+                                        {balance > 0 && `-$${Math.abs(balance).toFixed(2)}`}
+                                        {balance < 0 && `$${Math.abs(balance).toFixed(2)}`}
+                                        {balance === 0 && "$0.00"}
+                                    </td>
                                 </tr>
                             );
                         })}
