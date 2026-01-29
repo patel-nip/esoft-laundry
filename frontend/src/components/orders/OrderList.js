@@ -4,10 +4,10 @@ import React from "react";
 function formatDate(dateString) {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
 }
 
@@ -68,6 +68,7 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
 
     const renderRow = (order) => {
         const isSelected = order.id === selectedOrderId;
+        const balance = parseFloat(order.balance || 0);
 
         if (activeTab === "completed") {
             return (
@@ -117,7 +118,7 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
             );
         }
 
-        // received / all
+        // received / all - ✅ UPDATED: Balance with color coding
         return (
             <tr
                 key={order.id}
@@ -135,7 +136,17 @@ function OrderList({ activeTab, orders, selectedOrderId, onSelectOrder }) {
                 <td>{order.user_created}</td>
                 <td className="text-right">{parseFloat(order.total || 0).toFixed(2)}</td>
                 <td className="text-right">{parseFloat(order.paid || 0).toFixed(2)}</td>
-                <td className="text-right">{parseFloat(order.balance || 0).toFixed(2)}</td>
+                <td
+                    className="text-right"
+                    style={{
+                        fontWeight: 600,
+                        color: balance > 0 ? "#ef4444" : balance < 0 ? "#10b981" : "inherit"
+                    }}
+                >
+                    {balance > 0 && `-$${Math.abs(balance).toFixed(2)}`}
+                    {balance < 0 && `$${Math.abs(balance).toFixed(2)}`}
+                    {balance === 0 && "$0.00"}
+                </td>
             </tr>
         );
     };
