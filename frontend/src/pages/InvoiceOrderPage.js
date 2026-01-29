@@ -36,37 +36,42 @@ function InvoiceOrderPage() {
             }
 
             // Fetch NCF ranges
-            const ncfData = await ncfAPI.getRanges();
+            try {
+                const ncfData = await ncfAPI.getRanges();
 
-            // ✅ FIXED: Transform to lookup object with correct field names
-            const rangesMap = {
-                NONE: null,
-            };
+                // ✅ FIXED: Transform to lookup object with correct field names
+                const rangesMap = {};
 
-            if (ncfData.ranges && ncfData.ranges.length > 0) {
-                ncfData.ranges.forEach(range => {
-                    // Use series_type as the key (B01, B02, B15)
-                    rangesMap[range.series_type] = {
-                        label: range.series_type,
-                        prefix: range.prefix,
-                        series: range.series,
-                        initial: range.start_number,      // ✅ Changed from initial_number
-                        current: range.current_number,
-                        last: range.end_number,           // ✅ Changed from last_number
-                        remaining: range.end_number - range.current_number + 1
-                    };
-                });
+                if (ncfData.ranges && ncfData.ranges.length > 0) {
+                    ncfData.ranges.forEach(range => {
+                        // Use series_type as the key (B01, B02, B15)
+                        rangesMap[range.series_type] = {
+                            label: range.series_type,
+                            prefix: range.prefix,
+                            series: range.series,
+                            initial: range.start_number,      // ✅ From backend transform
+                            current: range.current_number,
+                            last: range.end_number,           // ✅ From backend transform
+                            remaining: range.end_number - range.current_number + 1
+                        };
+                    });
+                }
+
+                setNcfRanges(rangesMap);
+            } catch (ncfError) {
+                console.warn("Failed to load NCF ranges:", ncfError);
+                // Don't fail the whole page if NCF ranges fail to load
+                setNcfRanges({});
             }
 
-            setNcfRanges(rangesMap);
         } catch (err) {
             console.error("Fetch data error:", err);
 
             // ✅ IMPROVED: Better error messages
-            let errorMessage = "Failed to load data.";
+            let errorMessage = "Failed to load orders.";
 
             if (err.response?.status === 400) {
-                errorMessage = "⚠️ Database error. Please ensure NCF ranges table is set up correctly.";
+                errorMessage = "⚠️ Database error. Please ensure all tables are set up correctly.";
             } else if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.message) {
@@ -78,6 +83,7 @@ function InvoiceOrderPage() {
             setLoading(false);
         }
     }
+
 
 
     const ncfInfo = ncfRanges[ncfType] || null;
