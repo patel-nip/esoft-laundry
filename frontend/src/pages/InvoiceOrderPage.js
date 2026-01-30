@@ -84,8 +84,6 @@ function InvoiceOrderPage() {
         }
     }
 
-
-
     const ncfInfo = ncfRanges[ncfType] || null;
 
     const filteredOrders = useMemo(() => {
