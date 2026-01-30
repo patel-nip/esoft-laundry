@@ -43,9 +43,9 @@ function CreateOrderPage() {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [printChoiceModalOpen, setPrintChoiceModalOpen] = useState(false);
     const [payment, setPayment] = useState({
-        cash: 0,
-        card: 0,
-        transfer: 0,
+        cash:'',
+        card:'',
+        transfer:'',
     });
 
     const [loading, setLoading] = useState(false);
@@ -132,7 +132,7 @@ function CreateOrderPage() {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = applyTax ? subtotal * 0.18 : 0;
     const total = subtotal + tax;
-    const amountPaid = payment.cash + payment.card + payment.transfer;
+    const amountPaid = (parseFloat(payment.cash) || 0) + (parseFloat(payment.card) || 0) + (parseFloat(payment.transfer) || 0);
     const remaining = Math.max(0, total - amountPaid);
     const change = Math.max(0, amountPaid - total);
 
@@ -211,7 +211,7 @@ function CreateOrderPage() {
             setItems([]);
             setCustomer(null);
             setOrderNote("");
-            setPayment({ cash: 0, card: 0, transfer: 0 });
+            setPayment({ cash: '', card: '', transfer: '' });
             setSuccess("");
             setCreatedOrder(null);
             setLoading(false);
@@ -793,9 +793,8 @@ function CreateOrderPage() {
                             <input
                                 type="number"
                                 value={payment.cash}
-                                onChange={(e) =>
-                                    setPayment((p) => ({ ...p, cash: Number(e.target.value) || 0 }))
-                                }
+                                onChange={(e) => setPayment(p => ({ ...p, cash: e.target.value }))}
+                                placeholder="0"
                             />
                         </div>
 
@@ -804,9 +803,8 @@ function CreateOrderPage() {
                             <input
                                 type="number"
                                 value={payment.card}
-                                onChange={(e) =>
-                                    setPayment((p) => ({ ...p, card: Number(e.target.value) || 0 }))
-                                }
+                                onChange={(e) => setPayment(p => ({ ...p, card: e.target.value }))}
+                                placeholder="0"
                             />
                         </div>
 
@@ -815,9 +813,8 @@ function CreateOrderPage() {
                             <input
                                 type="number"
                                 value={payment.transfer}
-                                onChange={(e) =>
-                                    setPayment((p) => ({ ...p, transfer: Number(e.target.value) || 0 }))
-                                }
+                                onChange={(e) => setPayment(p => ({ ...p, transfer: e.target.value }))}
+                                placeholder="0"
                             />
                         </div>
 
