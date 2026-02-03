@@ -6,8 +6,9 @@ async function findUserByUsername(username) {
     return rows[0] || null;
 }
 
-async function getAllUsers() {
-    const [rows] = await pool.query(`
+// ✅ Get all users (filtered by branch)
+async function getAllUsers(branchId = null) {
+    let query = `
         SELECT 
             id, 
             username, 
@@ -15,17 +16,27 @@ async function getAllUsers() {
             email, 
             phone, 
             role, 
-            branch, 
+            branch_id,
             status,
             created_at
-        FROM users 
-        ORDER BY created_at DESC
-    `);
+        FROM users
+    `;
+    let params = [];
+
+    if (branchId) {
+        query += " WHERE branch_id = ?";
+        params.push(branchId);
+    }
+
+    query += " ORDER BY created_at DESC";
+
+    const [rows] = await pool.query(query, params);
     return rows;
 }
 
-async function getUserById(id) {
-    const [rows] = await pool.query(`
+// ✅ Get user by ID (with branch check)
+async function getUserById(id, branchId = null) {
+    let query = `
         SELECT 
             id, 
             username, 
@@ -33,21 +44,30 @@ async function getUserById(id) {
             email, 
             phone, 
             role, 
-            branch, 
+            branch_id,
             status,
             created_at
         FROM users 
         WHERE id = ?
-    `, [id]);
+    `;
+    let params = [id];
+
+    if (branchId) {
+        query += " AND branch_id = ?";
+        params.push(branchId);
+    }
+
+    const [rows] = await pool.query(query, params);
     return rows[0] || null;
 }
 
+// ✅ Create user (with branch_id)
 async function createUser(data) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     
     const [result] = await pool.query(
         `INSERT INTO users 
-        (username, password_hash, name, email, phone, role, branch, status) 
+        (username, password_hash, name, email, phone, role, branch_id, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             data.username,
@@ -55,25 +75,31 @@ async function createUser(data) {
             data.name || null,
             data.email || null,
             data.phone || null,
-            data.role || 'ADMIN',
-            data.branch || 'MAIN',
+            data.role || 'CASHIER',
+            data.branch_id || null, // ✅ Changed from 'branch' to 'branch_id'
             data.status || 'ACTIVE'
         ]
     );
     return result.insertId;
 }
 
-async function updateUser(id, data) {
-    let query = `UPDATE users SET username = ?, name = ?, email = ?, phone = ?, role = ?, branch = ?, status = ?`;
+// ✅ Update user (with branch check)
+async function updateUser(id, data, branchId = null) {
+    let query = `UPDATE users SET username = ?, name = ?, email = ?, phone = ?, role = ?, status = ?`;
     let params = [
         data.username,
         data.name,
         data.email,
         data.phone,
         data.role,
-        data.branch,
         data.status
     ];
+    
+    // ✅ Update branch_id if provided
+    if (data.branch_id !== undefined) {
+        query += `, branch_id = ?`;
+        params.push(data.branch_id);
+    }
     
     if (data.password) {
         const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -83,13 +109,28 @@ async function updateUser(id, data) {
     
     query += ` WHERE id = ?`;
     params.push(id);
+
+    // ✅ Add branch check for non-super admins
+    if (branchId) {
+        query += " AND branch_id = ?";
+        params.push(branchId);
+    }
     
     const [result] = await pool.query(query, params);
     return result.affectedRows;
 }
 
-async function deleteUser(id) {
-    const [result] = await pool.query("DELETE FROM users WHERE id = ?", [id]);
+// ✅ Delete user (with branch check)
+async function deleteUser(id, branchId = null) {
+    let query = "DELETE FROM users WHERE id = ?";
+    let params = [id];
+
+    if (branchId) {
+        query += " AND branch_id = ?";
+        params.push(branchId);
+    }
+
+    const [result] = await pool.query(query, params);
     return result.affectedRows;
 }
 

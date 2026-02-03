@@ -7,11 +7,13 @@ const {
     getNCFConfig,
     updateNCFConfig
 } = require("../models/ncfRangeModel");
+const { getUserBranch } = require("../middleware/authMiddleware");
 
 async function listNCFRanges(req, res) {
     try {
-        const ranges = await getAllNCFRanges();
-        const config = await getNCFConfig();
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const ranges = await getAllNCFRanges(branchId); // ✅ Pass branchId
+        const config = await getNCFConfig(branchId); // ✅ Pass branchId
         res.json({ ranges, config });
     } catch (error) {
         console.error("Error fetching NCF ranges:", error);
@@ -21,7 +23,8 @@ async function listNCFRanges(req, res) {
 
 async function getNCFRange(req, res) {
     try {
-        const range = await getNCFRangeById(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const range = await getNCFRangeById(req.params.id, branchId); // ✅ Pass branchId
         if (!range) {
             return res.status(404).json({ message: "NCF range not found" });
         }
@@ -40,6 +43,12 @@ async function addNCFRange(req, res) {
             return res.status(400).json({ message: "Missing required fields" });
         }
 
+        const branchId = req.user.branch_id; // ✅ Get user's branch
+
+        if (!branchId) {
+            return res.status(400).json({ message: "Branch ID is required" });
+        }
+
         const newId = await createNCFRange({
             series_type,
             prefix,
@@ -47,9 +56,9 @@ async function addNCFRange(req, res) {
             end_number,
             current_number,
             status
-        });
+        }, branchId); // ✅ Pass branchId
 
-        const newRange = await getNCFRangeById(newId);
+        const newRange = await getNCFRangeById(newId, branchId);
         res.status(201).json({ message: "NCF range created", range: newRange });
     } catch (error) {
         console.error("Error creating NCF range:", error);
@@ -65,6 +74,8 @@ async function editNCFRange(req, res) {
             return res.status(400).json({ message: "Missing required fields" });
         }
 
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+
         const updated = await updateNCFRange(req.params.id, {
             series_type,
             prefix,
@@ -72,13 +83,13 @@ async function editNCFRange(req, res) {
             end_number,
             current_number,
             status
-        });
+        }, branchId); // ✅ Pass branchId
 
         if (updated === 0) {
             return res.status(404).json({ message: "NCF range not found" });
         }
 
-        const updatedRange = await getNCFRangeById(req.params.id);
+        const updatedRange = await getNCFRangeById(req.params.id, branchId);
         res.json({ message: "NCF range updated", range: updatedRange });
     } catch (error) {
         console.error("Error updating NCF range:", error);
@@ -88,7 +99,8 @@ async function editNCFRange(req, res) {
 
 async function getConfig(req, res) {
     try {
-        const config = await getNCFConfig();
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const config = await getNCFConfig(branchId); // ✅ Pass branchId
         res.json({ config });
     } catch (error) {
         console.error("Error fetching NCF config:", error);
@@ -100,6 +112,12 @@ async function updateConfig(req, res) {
     try {
         const { email_607_1, email_607_2, email_607_3, selected_period, auto_apply_itbis, default_ncf_type } = req.body;
 
+        const branchId = req.user.branch_id; // ✅ Get user's branch
+
+        if (!branchId) {
+            return res.status(400).json({ message: "Branch ID is required" });
+        }
+
         await updateNCFConfig({
             email_607_1,
             email_607_2,
@@ -107,9 +125,9 @@ async function updateConfig(req, res) {
             selected_period,
             auto_apply_itbis,
             default_ncf_type
-        });
+        }, branchId); // ✅ Pass branchId
 
-        const updatedConfig = await getNCFConfig();
+        const updatedConfig = await getNCFConfig(branchId);
         res.json({ message: "NCF config updated", config: updatedConfig });
     } catch (error) {
         console.error("Error updating NCF config:", error);

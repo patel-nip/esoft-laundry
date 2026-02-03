@@ -5,10 +5,12 @@ const {
     updateUser,
     deleteUser
 } = require("../models/userModel");
+const { getUserBranch } = require("../middleware/authMiddleware"); // ✅ Added
 
 async function listUsers(req, res) {
     try {
-        const users = await getAllUsers();
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const users = await getAllUsers(branchId); // ✅ Pass branchId
         res.json({ users });
     } catch (error) {
         console.error("Error fetching users:", error);
@@ -18,7 +20,8 @@ async function listUsers(req, res) {
 
 async function getUser(req, res) {
     try {
-        const user = await getUserById(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const user = await getUserById(req.params.id, branchId); // ✅ Pass branchId
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -31,10 +34,17 @@ async function getUser(req, res) {
 
 async function addUser(req, res) {
     try {
-        const { username, password, name, email, phone, role, branch, status } = req.body;
+        const { username, password, name, email, phone, role, branch_id, status } = req.body;
 
         if (!username || !password) {
             return res.status(400).json({ message: "Username and password are required" });
+        }
+
+        // ✅ Use provided branch_id or user's own branch
+        const userBranchId = branch_id || req.user.branch_id;
+
+        if (!userBranchId && req.user.role !== 'SUPER_ADMIN') {
+            return res.status(400).json({ message: "Branch ID is required" });
         }
 
         const newId = await createUser({
@@ -44,7 +54,7 @@ async function addUser(req, res) {
             email,
             phone,
             role,
-            branch,
+            branch_id: userBranchId, // ✅ Changed from 'branch' to 'branch_id'
             status
         });
 
@@ -61,11 +71,13 @@ async function addUser(req, res) {
 
 async function editUser(req, res) {
     try {
-        const { username, password, name, email, phone, role, branch, status } = req.body;
+        const { username, password, name, email, phone, role, branch_id, status } = req.body;
 
         if (!username) {
             return res.status(400).json({ message: "Username is required" });
         }
+
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         const updated = await updateUser(req.params.id, {
             username,
@@ -74,15 +86,15 @@ async function editUser(req, res) {
             email,
             phone,
             role,
-            branch,
+            branch_id, // ✅ Changed from 'branch' to 'branch_id'
             status
-        });
+        }, branchId); // ✅ Pass branchId
 
         if (updated === 0) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const updatedUser = await getUserById(req.params.id);
+        const updatedUser = await getUserById(req.params.id, branchId);
         res.json({ message: "User updated", user: updatedUser });
     } catch (error) {
         console.error("Error updating user:", error);
@@ -92,7 +104,8 @@ async function editUser(req, res) {
 
 async function removeUser(req, res) {
     try {
-        const deleted = await deleteUser(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const deleted = await deleteUser(req.params.id, branchId); // ✅ Pass branchId
         if (deleted === 0) {
             return res.status(404).json({ message: "User not found" });
         }

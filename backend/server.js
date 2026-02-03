@@ -12,6 +12,7 @@ const invoiceSettingsRoutes = require("./src/routes/invoiceSettingsRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const roleRoutes = require("./src/routes/roleRoutes");
 const printerRoutes = require("./src/routes/printerRoutes");
+const branchRoutes = require("./src/routes/branchRoutes"); // ✅ NEW: Import branch routes
 
 const corsOptions = {
     origin: [
@@ -46,6 +47,7 @@ app.use("/api/invoice-settings", invoiceSettingsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/printers", printerRoutes);
+app.use("/api/branches", branchRoutes); // ✅ NEW: Register branch routes
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

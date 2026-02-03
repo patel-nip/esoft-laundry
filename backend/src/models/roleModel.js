@@ -1,6 +1,8 @@
 const pool = require("../config/db");
 
 const AVAILABLE_MODULES = [
+    { id: 'dashboard', label: 'Dashboard' }, // ✅ Added
+    { id: 'branches', label: 'Branches' }, // ✅ Added (Super Admin only)
     { id: 'create_order', label: 'Create Order' },
     { id: 'order_status', label: 'Order Status' },
     { id: 'invoice_order', label: 'Invoice Order' },
@@ -16,7 +18,8 @@ const AVAILABLE_MODULES = [
     { id: 'service_prices', label: 'Service Prices' }
 ];
 
-const AVAILABLE_ROLES = ['ADMIN', 'CASHIER', 'OPERATOR', 'SPECIAL'];
+// ✅ FIXED: Changed to match your actual roles
+const AVAILABLE_ROLES = ['SUPER_ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'OPERATOR', 'SPECIAL'];
 
 async function getAllPermissions() {
     const [rows] = await pool.query(`

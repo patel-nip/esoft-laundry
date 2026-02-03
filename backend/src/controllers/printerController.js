@@ -1,11 +1,11 @@
 const { getPrinterSettings, updatePrinterSettings } = require("../models/printerModel");
+const { getUserBranch } = require("../middleware/authMiddleware"); // ✅ Added
 
 async function getSettings(req, res) {
     try {
-        const settings = await getPrinterSettings();
-        if (!settings) {
-            return res.status(404).json({ message: "Printer settings not found" });
-        }
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const settings = await getPrinterSettings(branchId); // ✅ Pass branchId
+        
         res.json({ settings });
     } catch (error) {
         console.error("Error fetching printer settings:", error);
@@ -16,15 +16,16 @@ async function getSettings(req, res) {
 async function updateSettings(req, res) {
     try {
         const { invoice_printer, invoice_paper_type, report_printer, report_paper_type } = req.body;
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         await updatePrinterSettings({
             invoice_printer: invoice_printer || "Microsoft Print to PDF",
             invoice_paper_type: invoice_paper_type || "Thermal Paper",
             report_printer: report_printer || "Microsoft Print to PDF",
             report_paper_type: report_paper_type || "Thermal Paper"
-        });
+        }, branchId); // ✅ Pass branchId
 
-        const updatedSettings = await getPrinterSettings();
+        const updatedSettings = await getPrinterSettings(branchId);
         res.json({ message: "Printer settings updated", settings: updatedSettings });
     } catch (error) {
         console.error("Error updating printer settings:", error);

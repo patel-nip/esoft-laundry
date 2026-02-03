@@ -6,16 +6,18 @@ const {
     updateCustomer,
     deleteCustomer,
 } = require("../models/customerModel");
+const { getUserBranch } = require("../middleware/authMiddleware");
 
 async function listCustomers(req, res) {
     try {
         const { search } = req.query;
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         let customers;
         if (search) {
-            customers = await searchCustomers(search);
+            customers = await searchCustomers(search, branchId);
         } else {
-            customers = await getAllCustomers();
+            customers = await getAllCustomers(branchId);
         }
 
         res.json({ customers });
@@ -27,7 +29,8 @@ async function listCustomers(req, res) {
 
 async function getCustomer(req, res) {
     try {
-        const customer = await findCustomerById(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const customer = await findCustomerById(req.params.id, branchId);
 
         if (!customer) {
             return res.status(404).json({ message: "Customer not found" });
@@ -48,6 +51,12 @@ async function addCustomer(req, res) {
             return res.status(400).json({ message: "Name and phone are required" });
         }
 
+        const branchId = req.user.branch_id; // ✅ Use user's branch
+
+        if (!branchId) {
+            return res.status(400).json({ message: "Branch ID is required" });
+        }
+
         const customer = await createCustomer({
             code: code || `C${Date.now()}`,
             name,
@@ -55,7 +64,7 @@ async function addCustomer(req, res) {
             phone2,
             address,
             rnc,
-        });
+        }, branchId); // ✅ Pass branchId
 
         res.status(201).json({ message: "Customer created", customer });
     } catch (err) {
@@ -67,6 +76,7 @@ async function addCustomer(req, res) {
 async function editCustomer(req, res) {
     try {
         const { name, phone, phone2, address, rnc } = req.body;
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         const customer = await updateCustomer(req.params.id, {
             name,
@@ -74,7 +84,7 @@ async function editCustomer(req, res) {
             phone2,
             address,
             rnc,
-        });
+        }, branchId); // ✅ Pass branchId
 
         if (!customer) {
             return res.status(404).json({ message: "Customer not found" });
@@ -89,7 +99,8 @@ async function editCustomer(req, res) {
 
 async function removeCustomer(req, res) {
     try {
-        await deleteCustomer(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        await deleteCustomer(req.params.id, branchId); // ✅ Pass branchId
         res.json({ message: "Customer deleted" });
     } catch (err) {
         console.error("Remove customer error:", err);

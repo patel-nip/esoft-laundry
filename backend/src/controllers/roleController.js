@@ -7,12 +7,25 @@ const {
     updateBulkPermissions
 } = require("../models/roleModel");
 
+// ✅ NEW: Define which roles each user type can manage
+const MANAGEABLE_ROLES = {
+    SUPER_ADMIN: ['SUPER_ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'OPERATOR', 'SPECIAL'],
+    BRANCH_MANAGER: ['CASHIER', 'OPERATOR', 'SPECIAL'], // Can't modify admin roles
+    CASHIER: [],
+    OPERATOR: [],
+    SPECIAL: []
+};
+
 async function getPermissionMatrix(req, res) {
     try {
+        const userRole = req.user.role; // ✅ Get logged-in user's role
+        const allowedRoles = MANAGEABLE_ROLES[userRole] || []; // ✅ Get roles user can manage
+
         const permissions = await getAllPermissions();
 
         const matrix = {};
-        AVAILABLE_ROLES.forEach(role => {
+        // ✅ CHANGED: Only show roles user can manage
+        allowedRoles.forEach(role => {
             matrix[role] = {};
             AVAILABLE_MODULES.forEach(module => {
                 matrix[role][module.id] = false;
@@ -27,7 +40,7 @@ async function getPermissionMatrix(req, res) {
 
         res.json({
             modules: AVAILABLE_MODULES,
-            roles: AVAILABLE_ROLES,
+            roles: allowedRoles, // ✅ CHANGED: Return only allowed roles
             permissions: matrix
         });
     } catch (error) {
@@ -39,6 +52,13 @@ async function getPermissionMatrix(req, res) {
 async function getRolePermissions(req, res) {
     try {
         const { role } = req.params;
+        const userRole = req.user.role; // ✅ NEW
+        const allowedRoles = MANAGEABLE_ROLES[userRole] || []; // ✅ NEW
+
+        // ✅ NEW: Check if user can manage this role
+        if (!allowedRoles.includes(role)) {
+            return res.status(403).json({ message: "You don't have permission to view this role" });
+        }
 
         if (!AVAILABLE_ROLES.includes(role)) {
             return res.status(400).json({ message: "Invalid role" });
@@ -64,6 +84,13 @@ async function getRolePermissions(req, res) {
 async function updateSinglePermission(req, res) {
     try {
         const { role, module, can_access } = req.body;
+        const userRole = req.user.role; // ✅ NEW
+        const allowedRoles = MANAGEABLE_ROLES[userRole] || []; // ✅ NEW
+
+        // ✅ NEW: Check if user can manage this role
+        if (!allowedRoles.includes(role)) {
+            return res.status(403).json({ message: "You don't have permission to modify this role" });
+        }
 
         if (!AVAILABLE_ROLES.includes(role)) {
             return res.status(400).json({ message: "Invalid role" });
@@ -85,12 +112,21 @@ async function updateSinglePermission(req, res) {
 async function updateMultiplePermissions(req, res) {
     try {
         const { permissions } = req.body;
+        const userRole = req.user.role; // ✅ NEW
+        const allowedRoles = MANAGEABLE_ROLES[userRole] || []; // ✅ NEW
 
         if (!Array.isArray(permissions) || permissions.length === 0) {
             return res.status(400).json({ message: "Permissions array is required" });
         }
 
         for (const perm of permissions) {
+            // ✅ NEW: Check if user can manage this role
+            if (!allowedRoles.includes(perm.role)) {
+                return res.status(403).json({ 
+                    message: `You don't have permission to modify ${perm.role} role` 
+                });
+            }
+
             if (!AVAILABLE_ROLES.includes(perm.role)) {
                 return res.status(400).json({ message: `Invalid role: ${perm.role}` });
             }

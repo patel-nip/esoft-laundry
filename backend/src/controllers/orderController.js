@@ -16,11 +16,14 @@ const {
     createPayment,
 } = require("../models/paymentModel");
 const { getNextNCF, getNCFConfig } = require("../models/ncfRangeModel");
+const { getUserBranch } = require("../middleware/authMiddleware");
 
 async function listOrders(req, res) {
     try {
         const { status } = req.query;
-        const orders = await getAllOrders(status);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        
+        const orders = await getAllOrders(status, branchId); // ✅ Pass branchId
 
         for (let order of orders) {
             order.items = await getItemsByOrderId(order.id);
@@ -35,7 +38,8 @@ async function listOrders(req, res) {
 
 async function getOrder(req, res) {
     try {
-        const order = await findOrderById(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const order = await findOrderById(req.params.id, branchId); // ✅ Pass branchId
 
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
@@ -69,6 +73,12 @@ async function addOrder(req, res) {
             return res.status(400).json({ message: "Customer and items are required" });
         }
 
+        const branchId = req.user.branch_id; // ✅ Get user's branch
+
+        if (!branchId) {
+            return res.status(400).json({ message: "Branch ID is required" });
+        }
+
         const now = new Date();
         const orderDate = now.toISOString().split("T")[0];
         const orderTime = now.toTimeString().split(" ")[0];
@@ -82,8 +92,8 @@ async function addOrder(req, res) {
             etaDateStr = defaultEta.toISOString().split("T")[0];
         }
 
-        // ✅ CHANGED: Generate sequential order code
-        const orderCode = await generateOrderCode();
+        // ✅ Generate branch-specific order code
+        const orderCode = await generateOrderCode(branchId);
 
         const balance = total - paid;
 
@@ -103,7 +113,7 @@ async function addOrder(req, res) {
             paid: paid || 0,
             balance: balance,
             notes,
-        });
+        }, branchId); // ✅ Pass branchId
 
         for (let item of items) {
             await createOrderItem({
@@ -118,7 +128,7 @@ async function addOrder(req, res) {
             });
         }
 
-        const order = await findOrderById(orderId);
+        const order = await findOrderById(orderId, branchId);
         order.items = await getItemsByOrderId(orderId);
 
         res.status(201).json({ message: "Order created", order });
@@ -131,6 +141,7 @@ async function addOrder(req, res) {
 async function editOrder(req, res) {
     try {
         const { status, location, handler, customer_notified, ncf_type } = req.body;
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         const updateData = {};
         if (location) updateData.location = location;
@@ -139,7 +150,7 @@ async function editOrder(req, res) {
 
         // ✅ Auto-assign NCF when marking as DELIVERED
         if (status === "DELIVERED") {
-            const order = await findOrderById(req.params.id);
+            const order = await findOrderById(req.params.id, branchId);
             
             if (!order) {
                 return res.status(404).json({ message: "Order not found" });
@@ -156,22 +167,21 @@ async function editOrder(req, res) {
             let ncfTypeToUse = ncf_type;
             
             if (!ncfTypeToUse || ncfTypeToUse === 'NONE') {
-                const config = await getNCFConfig();
+                const config = await getNCFConfig(branchId); // ✅ Pass branchId
                 ncfTypeToUse = config?.default_ncf_type || 'B02';
             }
 
-            // Generate NCF number
+            // Generate NCF number (branch-specific)
             try {
-                const ncfNumber = await getNextNCF(ncfTypeToUse);
+                const ncfNumber = await getNextNCF(ncfTypeToUse, branchId); // ✅ Pass branchId
                 updateData.ncf_type = ncfTypeToUse;
                 updateData.ncf_number = ncfNumber;
                 updateData.status = "DELIVERED";
                 
-                console.log(`✅ NCF assigned: ${ncfNumber} to order ${order.code}`);
+                console.log(`✅ NCF assigned: ${ncfNumber} to order ${order.code} (Branch: ${branchId})`);
             } catch (ncfError) {
                 console.error("NCF generation error:", ncfError);
                 
-                // ✅ IMPROVED: Specific error messages
                 let errorMessage = "Failed to generate NCF number.";
                 
                 if (ncfError.message.includes("No active NCF range")) {
@@ -188,7 +198,7 @@ async function editOrder(req, res) {
             updateData.status = status;
         }
 
-        const updatedOrder = await updateOrder(req.params.id, updateData);
+        const updatedOrder = await updateOrder(req.params.id, updateData, branchId); // ✅ Pass branchId
 
         if (!updatedOrder) {
             return res.status(404).json({ message: "Order not found" });
@@ -203,10 +213,10 @@ async function editOrder(req, res) {
     }
 }
 
-
 async function removeOrder(req, res) {
     try {
-        await deleteOrder(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        await deleteOrder(req.params.id, branchId); // ✅ Pass branchId
         res.json({ message: "Order deleted" });
     } catch (err) {
         console.error("Remove order error:", err);
@@ -217,12 +227,13 @@ async function removeOrder(req, res) {
 async function addPaymentToOrder(req, res) {
     try {
         const { amount, payment_method } = req.body;
+        const branchId = getUserBranch(req); // ✅ Get user's branch
 
         if (!amount || !payment_method) {
             return res.status(400).json({ message: "Amount and payment method are required" });
         }
 
-        const order = await findOrderById(req.params.id);
+        const order = await findOrderById(req.params.id, branchId); // ✅ Pass branchId
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
         }
@@ -239,9 +250,9 @@ async function addPaymentToOrder(req, res) {
         await updateOrder(req.params.id, {
             paid: newPaid,
             balance: newBalance,
-        });
+        }, branchId); // ✅ Pass branchId
 
-        const updatedOrder = await findOrderById(req.params.id);
+        const updatedOrder = await findOrderById(req.params.id, branchId);
         updatedOrder.payments = await getPaymentsByOrderId(req.params.id);
 
         res.json({ message: "Payment added", order: updatedOrder });

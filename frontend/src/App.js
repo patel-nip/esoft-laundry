@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { BranchProvider } from "./context/BranchContext"; // ✅ NEW: Import BranchContext
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -17,6 +18,7 @@ import UsersPage from "./pages/settings/UsersPage";
 import RolesPage from "./pages/settings/RolesPage";
 import NCFConfigPage from "./pages/settings/NCFConfigPage";
 import PrintersPage from "./pages/settings/PrintersPage";
+import BranchesPage from "./pages/SuperAdmin/BranchesPage"; // ✅ NEW: Import BranchesPage
 import { startActivityTracking, stopActivityTracking, checkSessionExpiry } from "./utils/ActivityTracker";
 import { authHelpers } from "./services/api";
 
@@ -97,6 +99,16 @@ function AppContent() {
         }
       />
 
+      {/* ✅ NEW: Branches Management (Super Admin Only) */}
+      <Route
+        path="/dashboard/branches"
+        element={
+          <ProtectedRoute requiredPermission="branches">
+            <BranchesPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Settings - Main page accessible to all */}
       <Route
         path="/dashboard/settings"
@@ -171,9 +183,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <BranchProvider> {/* ✅ NEW: Wrap with BranchProvider */}
+        <Router>
+          <AppContent />
+        </Router>
+      </BranchProvider>
     </AuthProvider>
   );
 }

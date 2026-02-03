@@ -5,10 +5,12 @@ const {
     updateServicePrice,
     deleteServicePrice
 } = require("../models/servicePriceModel");
+const { getUserBranch } = require("../middleware/authMiddleware");
 
 async function listServicePrices(req, res) {
     try {
-        const prices = await getAllServicePrices();
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const prices = await getAllServicePrices(branchId); // ✅ Pass branchId
         res.json({ servicePrices: prices });
     } catch (error) {
         console.error("Error fetching service prices:", error);
@@ -18,7 +20,8 @@ async function listServicePrices(req, res) {
 
 async function getServicePrice(req, res) {
     try {
-        const price = await getServicePriceById(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const price = await getServicePriceById(req.params.id, branchId); // ✅ Pass branchId
         if (!price) {
             return res.status(404).json({ message: "Service price not found" });
         }
@@ -37,6 +40,12 @@ async function addServicePrice(req, res) {
             return res.status(400).json({ message: "Garment name is required" });
         }
 
+        const branchId = req.user.branch_id; // ✅ Get user's branch
+
+        if (!branchId) {
+            return res.status(400).json({ message: "Branch ID is required" });
+        }
+
         const newId = await createServicePrice({
             garment_name,
             wash_iron,
@@ -44,9 +53,9 @@ async function addServicePrice(req, res) {
             iron_only,
             alterations,
             express_percentage
-        });
+        }, branchId); // ✅ Pass branchId
 
-        const newPrice = await getServicePriceById(newId);
+        const newPrice = await getServicePriceById(newId, branchId);
         res.status(201).json({ message: "Service price created", servicePrice: newPrice });
     } catch (error) {
         console.error("Error creating service price:", error);
@@ -65,6 +74,8 @@ async function editServicePrice(req, res) {
             return res.status(400).json({ message: "Garment name is required" });
         }
 
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+
         const updated = await updateServicePrice(req.params.id, {
             garment_name,
             wash_iron,
@@ -72,13 +83,13 @@ async function editServicePrice(req, res) {
             iron_only,
             alterations,
             express_percentage
-        });
+        }, branchId); // ✅ Pass branchId
 
         if (updated === 0) {
             return res.status(404).json({ message: "Service price not found" });
         }
 
-        const updatedPrice = await getServicePriceById(req.params.id);
+        const updatedPrice = await getServicePriceById(req.params.id, branchId);
         res.json({ message: "Service price updated", servicePrice: updatedPrice });
     } catch (error) {
         console.error("Error updating service price:", error);
@@ -88,7 +99,8 @@ async function editServicePrice(req, res) {
 
 async function removeServicePrice(req, res) {
     try {
-        const deleted = await deleteServicePrice(req.params.id);
+        const branchId = getUserBranch(req); // ✅ Get user's branch
+        const deleted = await deleteServicePrice(req.params.id, branchId); // ✅ Pass branchId
         if (deleted === 0) {
             return res.status(404).json({ message: "Service price not found" });
         }

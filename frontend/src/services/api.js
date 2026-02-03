@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://esoft-laundry-backend.vercel.app/api';
+const API_BASE_URL = 'http://localhost:5000/api'; // ✅ Changed to localhost
 
 function getBrowserFingerprint() {
     // Create a fingerprint based on browser characteristics
@@ -83,6 +83,32 @@ export const authAPI = {
         }),
 
     getMe: () => apiRequest('/auth/me'),
+};
+
+// ✅ NEW: Branches API
+export const branchesAPI = {
+    getAll: () => apiRequest('/branches'),
+
+    getById: (id) => apiRequest(`/branches/${id}`),
+
+    getStats: (id) => apiRequest(`/branches/${id}/stats`),
+
+    create: (branchData) =>
+        apiRequest('/branches', {
+            method: 'POST',
+            body: JSON.stringify(branchData),
+        }),
+
+    update: (id, branchData) =>
+        apiRequest(`/branches/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(branchData),
+        }),
+
+    delete: (id) =>
+        apiRequest(`/branches/${id}`, {
+            method: 'DELETE',
+        }),
 };
 
 // Customers API
@@ -185,7 +211,6 @@ export const ncfAPI = {
             body: JSON.stringify(configData),
         }),
 };
-
 
 // Helper to save/remove token
 export const authHelpers = {
@@ -335,5 +360,3 @@ export const printersAPI = {
             body: JSON.stringify(settingsData),
         }),
 };
-
-
