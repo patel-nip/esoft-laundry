@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://esoft-laundry-backend.vercel.app/api'; // ✅ Changed to localhost
+const API_BASE_URL = 'http://localhost:5000/api'; // ✅ Changed to localhost
 
 function getBrowserFingerprint() {
     // Create a fingerprint based on browser characteristics

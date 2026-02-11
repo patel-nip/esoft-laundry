@@ -9,12 +9,12 @@ async function getItemsByOrderId(orderId) {
 }
 
 async function createOrderItem(data) {
-    const { order_id, qty, garment_name, color, service, is_express, price, note } = data;
+    const { branch_id, order_id, qty, garment_name, color, service, is_express, price, note } = data;
 
     const [result] = await pool.query(
-        `INSERT INTO order_items (order_id, qty, garment_name, color, service, is_express, price, note)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [order_id, qty, garment_name, color || null, service || null, is_express || 'NO', price || 0, note || null]
+        `INSERT INTO order_items (branch_id, order_id, qty, garment_name, color, service, is_express, price, note)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [branch_id, order_id, qty, garment_name, color || null, service || null, is_express || 'NO', price || 0, note || null]
     );
 
     return result.insertId;
