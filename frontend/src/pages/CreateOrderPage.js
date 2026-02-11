@@ -1,15 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Header from "../components/layout/Header";
 import CustomerModal from "../components/orders/CustomerModal";
 import InvoicePrint from "../components/orders/InvoicePrint";
 import { ordersAPI, servicePricesAPI } from "../services/api";
-
-const GARMENT_CATEGORIES = {
-    Clothing: ["Shirt", "Polo", "Blouse", "Jeans", "Pants", "Dress"],
-    Home: ["Curtain", "Tablecloth", "Sheet", "Small quilt", "Medium quilt", "Large quilt"],
-    Accessories: ["Cap", "Tie", "Vest", "Scarf", "Other"],
-};
 
 const SERVICE_OPTIONS = [
     { label: "Wash & iron", value: "Wash & Iron", dbColumn: "wash_iron" },
@@ -43,9 +37,9 @@ function CreateOrderPage() {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [printChoiceModalOpen, setPrintChoiceModalOpen] = useState(false);
     const [payment, setPayment] = useState({
-        cash:'',
-        card:'',
-        transfer:'',
+        cash: '',
+        card: '',
+        transfer: '',
     });
 
     const [loading, setLoading] = useState(false);
@@ -64,7 +58,30 @@ function CreateOrderPage() {
 
     useEffect(() => {
         fetchServicePrices();
+
+        const onFocus = () => fetchServicePrices();
+        window.addEventListener("focus", onFocus);
+
+        return () => window.removeEventListener("focus", onFocus);
     }, []);
+
+    const CATEGORY_ORDER = ["Clothing", "Home", "Accessories", "Other"];
+
+    const garmentsByCategory = useMemo(() => {
+        const map = {};
+        (servicePrices || []).forEach((p) => {
+            const cat = (p.category || "Other").trim() || "Other";
+            if (!map[cat]) map[cat] = [];
+            map[cat].push(p);
+        });
+
+        // sort garments inside each category
+        Object.keys(map).forEach(cat => {
+            map[cat].sort((a, b) => (a.garment_name || "").localeCompare(b.garment_name || ""));
+        });
+
+        return map;
+    }, [servicePrices]);
 
     async function fetchServicePrices() {
         try {
@@ -77,7 +94,7 @@ function CreateOrderPage() {
     }
 
     function calculatePrice(garmentName, serviceName, isExpress) {
-        const priceRow = servicePrices.find(p => p.garment_name === garmentName);
+        const priceRow = servicePrices.find(p => (p.garment_name || "").trim() === garmentName.trim());
 
         if (!priceRow) {
             console.log(`❌ No price found for garment: ${garmentName}`);
@@ -89,18 +106,21 @@ function CreateOrderPage() {
         const serviceOption = SERVICE_OPTIONS.find(s => s.value === serviceName);
         const dbColumn = serviceOption ? serviceOption.dbColumn : null;
 
-        if (dbColumn && priceRow[dbColumn]) {
-            basePrice = parseFloat(priceRow[dbColumn]);
+        // IMPORTANT: allow 0 values, so don't use (priceRow[dbColumn]) check
+        if (dbColumn && priceRow[dbColumn] !== undefined && priceRow[dbColumn] !== null) {
+            basePrice = parseFloat(priceRow[dbColumn]) || 0;
         } else {
             console.log(`❌ No price found for service: ${serviceName} (column: ${dbColumn})`);
         }
 
         if (isExpress && basePrice > 0) {
-            const expressPercent = priceRow.express_percent ? parseFloat(priceRow.express_percent) / 100 : 0.20;
+            const expressPercent = priceRow.express_percentage !== undefined && priceRow.express_percentage !== null
+                ? (parseFloat(priceRow.express_percentage) / 100)
+                : 0.20;
+
             basePrice = basePrice * (1 + expressPercent);
         }
 
-        console.log(`💰 Price calculated: ${garmentName} + ${serviceName} + Express(${isExpress}) = ${basePrice}`);
         return basePrice;
     }
 
@@ -225,24 +245,33 @@ function CreateOrderPage() {
                 <Header />
                 <div className="dashboard-content">
                     <section className="order-left">
-                        {Object.entries(GARMENT_CATEGORIES).map(([category, list]) => (
+                        {CATEGORY_ORDER.filter(cat => garmentsByCategory[cat]?.length).map((category) => (
                             <div key={category} style={{ marginBottom: 16 }}>
                                 <div className="category-title">{category}</div>
+
                                 <div className="item-grid">
-                                    {list.map((name) => (
+                                    {garmentsByCategory[category].map((g) => (
                                         <button
-                                            key={name}
+                                            key={g.id}
                                             className="item-button"
-                                            onClick={() => addItem(name)}
+                                            onClick={() => addItem(g.garment_name)}
+                                            type="button"
                                         >
-                                            <div className="item-icon" />
-                                            <span>{name}</span>
+                                            <div className="item-icon">
+                                                {g.image_url ? (
+                                                    <img src={g.image_url} alt={g.garment_name} className="item-image" />
+                                                ) : (
+                                                    <div className="item-image-placeholder" />
+                                                )}
+                                            </div>
+                                            <span>{g.garment_name}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         ))}
                     </section>
+
 
                     <section className="order-right">
                         <header

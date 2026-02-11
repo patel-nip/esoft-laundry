@@ -6,6 +6,8 @@ async function getAllServicePrices(branchId = null) {
         SELECT 
             id,
             garment_name,
+            category,
+            image_url,
             wash_iron,
             wash_iron_white,
             iron_only,
@@ -59,10 +61,12 @@ async function getServicePriceByGarment(garmentName, branchId = null) {
 async function createServicePrice(data, branchId) {
     const [result] = await pool.query(
         `INSERT INTO service_prices 
-        (garment_name, wash_iron, wash_iron_white, iron_only, alterations, express_percentage, branch_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (garment_name, category, image_url, wash_iron, wash_iron_white, iron_only, alterations, express_percentage, branch_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             data.garment_name,
+            data.category || "Other",
+            data.image_url || null,
             data.wash_iron || 0,
             data.wash_iron_white || 0,
             data.iron_only || 0,
@@ -77,16 +81,20 @@ async function createServicePrice(data, branchId) {
 // ✅ Update service price (with branch check)
 async function updateServicePrice(id, data, branchId = null) {
     let query = `UPDATE service_prices 
-        SET garment_name = ?, 
+        SET garment_name = ?,
+            category = ?,
+            image_url = ?,
             wash_iron = ?, 
             wash_iron_white = ?, 
             iron_only = ?, 
             alterations = ?, 
             express_percentage = ? 
         WHERE id = ?`;
-    
+
     let params = [
         data.garment_name,
+        data.category || "Other",
+        data.image_url || null,
         data.wash_iron,
         data.wash_iron_white,
         data.iron_only,

@@ -34,7 +34,7 @@ async function getServicePrice(req, res) {
 
 async function addServicePrice(req, res) {
     try {
-        const { garment_name, wash_iron, wash_iron_white, iron_only, alterations, express_percentage } = req.body;
+        const { garment_name, category, image_url, wash_iron, wash_iron_white, iron_only, alterations, express_percentage } = req.body;
 
         if (!garment_name) {
             return res.status(400).json({ message: "Garment name is required" });
@@ -48,6 +48,8 @@ async function addServicePrice(req, res) {
 
         const newId = await createServicePrice({
             garment_name,
+            category,
+            image_url,
             wash_iron,
             wash_iron_white,
             iron_only,
@@ -68,7 +70,7 @@ async function addServicePrice(req, res) {
 
 async function editServicePrice(req, res) {
     try {
-        const { garment_name, wash_iron, wash_iron_white, iron_only, alterations, express_percentage } = req.body;
+        const { garment_name, category, image_url, wash_iron, wash_iron_white, iron_only, alterations, express_percentage } = req.body;
 
         if (!garment_name) {
             return res.status(400).json({ message: "Garment name is required" });
@@ -78,6 +80,8 @@ async function editServicePrice(req, res) {
 
         const updated = await updateServicePrice(req.params.id, {
             garment_name,
+            category,
+            image_url,
             wash_iron,
             wash_iron_white,
             iron_only,

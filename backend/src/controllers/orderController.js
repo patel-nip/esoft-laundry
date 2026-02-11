@@ -167,33 +167,38 @@ async function editOrder(req, res) {
             // Get NCF type (from request or default config)
             let ncfTypeToUse = ncf_type;
 
-            if (!ncfTypeToUse || ncfTypeToUse === 'NONE') {
-                const config = await getNCFConfig(branchId); // ✅ Pass branchId
-                ncfTypeToUse = config?.default_ncf_type || 'B02';
-            }
-
-            // Generate NCF number (branch-specific)
-            try {
-                const ncfNumber = await getNextNCF(ncfTypeToUse, branchId); // ✅ Pass branchId
-                updateData.ncf_type = ncfTypeToUse;
-                updateData.ncf_number = ncfNumber;
+            // ✅ If user selected "NONE", deliver WITHOUT NCF
+            if (ncf_type === "NONE") {
                 updateData.status = "DELIVERED";
+                updateData.ncf_type = null;
+                updateData.ncf_number = null;
+            } else {
+                // ✅ Use requested type OR fallback only if missing
+                let ncfTypeToUse = ncf_type;
 
-                console.log(`✅ NCF assigned: ${ncfNumber} to order ${order.code} (Branch: ${branchId})`);
-            } catch (ncfError) {
-                console.error("NCF generation error:", ncfError);
-
-                let errorMessage = "Failed to generate NCF number.";
-
-                if (ncfError.message.includes("No active NCF range")) {
-                    errorMessage = `⚠️ No active NCF range found for ${ncfTypeToUse}. Please add an NCF range in Settings → Tax Receipts.`;
-                } else if (ncfError.message.includes("exhausted")) {
-                    errorMessage = `⚠️ NCF range exhausted for ${ncfTypeToUse}. Please add a new range in Settings → Tax Receipts.`;
-                } else {
-                    errorMessage = `⚠️ ${ncfError.message}`;
+                if (!ncfTypeToUse) {
+                    const config = await getNCFConfig(branchId);
+                    ncfTypeToUse = config?.default_ncf_type || "B02";
                 }
 
-                return res.status(400).json({ message: errorMessage });
+                try {
+                    const ncfNumber = await getNextNCF(ncfTypeToUse, branchId);
+                    updateData.ncf_type = ncfTypeToUse;
+                    updateData.ncf_number = ncfNumber;
+                    updateData.status = "DELIVERED";
+                } catch (ncfError) {
+                    let errorMessage = "Failed to generate NCF number.";
+
+                    if (ncfError.message.includes("No active NCF range")) {
+                        errorMessage = `⚠️ No active NCF range found for ${ncfTypeToUse}. Please add an NCF range in Settings → Tax Receipts.`;
+                    } else if (ncfError.message.includes("exhausted")) {
+                        errorMessage = `⚠️ NCF range exhausted for ${ncfTypeToUse}. Please add a new range in Settings → Tax Receipts.`;
+                    } else {
+                        errorMessage = `⚠️ ${ncfError.message}`;
+                    }
+
+                    return res.status(400).json({ message: errorMessage });
+                }
             }
         } else if (status) {
             updateData.status = status;
@@ -240,6 +245,7 @@ async function addPaymentToOrder(req, res) {
         }
 
         await createPayment({
+            branch_id: branchId,
             order_id: req.params.id,
             amount,
             payment_method,

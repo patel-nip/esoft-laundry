@@ -9,11 +9,11 @@ async function getPaymentsByOrderId(orderId) {
 }
 
 async function createPayment(data) {
-    const { order_id, amount, payment_method } = data;
+    const { branch_id, order_id, amount, payment_method } = data;
 
     const [result] = await pool.query(
-        "INSERT INTO payments (order_id, amount, payment_method) VALUES (?, ?, ?)",
-        [order_id, amount, payment_method]
+        "INSERT INTO payments ( branch_id, order_id, amount, payment_method) VALUES (?, ?, ?, ?)",
+        [branch_id, order_id, amount, payment_method]
     );
 
     return result.insertId;
